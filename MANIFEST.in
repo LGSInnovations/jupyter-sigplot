@@ -1,0 +1,2 @@
+recursive-include jupyterSigplot/static *.*
+include jupyterSigplot.json
