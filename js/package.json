@@ -42,6 +42,6 @@
     "d3": "^4.9.1"
   },
   "jupyterlab": {
-    "extension": "lib/labplugin"
+    "extension": "src/labplugin"
   }
 }
