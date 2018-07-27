@@ -10,4 +10,4 @@ jupyter nbextension install --py --symlink --sys-prefix jupyterSigplot
 jupyter nbextension enable --py --sys-prefix jupyterSigplot
 
 
-jupyter trust SigPlotExtensionTest.ipynb
+jupyter trust Untitled.ipynb
