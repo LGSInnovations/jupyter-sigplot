@@ -9,4 +9,3 @@ def _jupyter_nbextension_paths():
         'dest': 'jupyterSigplot',
         'require': 'jupyterSigplot/extension'
     }]
-    display(Javascript("utils.load_extensions('../js.src/sigplot_ext');"))
