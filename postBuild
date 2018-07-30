@@ -9,7 +9,7 @@ python setup.py install
 pip install -e .
 
 jupyter nbextension install --py jupyterSigplot
-jupyter nbextension enable --py jupyterSigplot
+jupyter nbextension enable --py jupyterSigplot/static/extension
 
 
 jupyter trust Untitled.ipynb
