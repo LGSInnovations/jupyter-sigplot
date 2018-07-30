@@ -14,6 +14,8 @@ if (window.require) {
         map: {
             "*" : {
                 "jupyterSigplot": "nbextensions/jupyterSigplot/index",
+                "jupyter-js-widgets": "nbextensions/jupyter-js-widgets/extension",
+
             }
         }
     });

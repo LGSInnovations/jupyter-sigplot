@@ -1,26 +1,20 @@
 {
   "name": "jupyterSigplot",
   "version": "0.1.0",
-  "description": "A Custom Jupyter Widget Library",
-  "author": "",
-  "main": "lib/index.js",
+  "description": "Sigplot for Jupyter Notebooks",
+  "author": "Michael Amat",
+  "main": "src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LGS Innovations/jupyterSigplot.git"
+    "url": "https://github.com/amatma/jupyterSigplot.git"
   },
   "keywords": [
     "jupyter",
     "widgets",
     "ipython",
-    "ipywidgets",
-    "jupyterlab-extension"
-  ],
-  "files": [
-    "src/**/*.js",
-    "dist/*.js"
+    "ipywidgets"
   ],
   "scripts": {
-    "clean": "rimraf dist/",
     "prepublish": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -36,12 +30,10 @@
     "webpack": "^1.12.14"
   },
   "dependencies": {
-    "jupyter-js-widgets": "^2.1.4",
-    "underscore": "^1.8.3",
     "britecharts": "^1.7.2",
-    "d3": "^4.9.1"
-  },
-  "jupyterlab": {
-    "extension": "src/labplugin"
+    "d3": "^4.9.1",
+    "jupyter-js-widgets": "^2.1.4",
+    "sigplot": "github:LGSInnovations/sigplot",
+    "underscore": "^1.8.3"
   }
 }

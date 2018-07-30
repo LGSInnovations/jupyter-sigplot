@@ -135,6 +135,7 @@ setup_args = {
             'jupyterSigplot/static/extension.js',
             'jupyterSigplot/static/index.js',
             'jupyterSigplot/static/index.js.map',
+            'js/src/sigplot_debug.js'
         ],),
         ('etc/jupyter/nbconfig/notebook.d/' ,['jupyterSigplot.json'])
     ],

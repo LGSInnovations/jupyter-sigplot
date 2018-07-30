@@ -3,9 +3,13 @@ var version = require('./package.json').version;
 
 // Custom webpack rules are generally the same for all webpack bundles, hence
 // stored in a separate local variable.
-var rules = [
-    { test: /\.css$/, use: ['style-loader', 'css-loader']}
-]
+var loaders = [
+    { test: /\.css$/, loader: "style-loader!css-loader" },
+    { test: /\.less$/, loader: "style-loader!css-loader!less-loader" },
+    { test: /\.json$/, loader: 'json-loader' }
+];
+
+
 
 
 module.exports = [
@@ -38,7 +42,7 @@ module.exports = [
         },
         devtool: 'source-map',
         module: {
-            rules: rules
+            loaders: loaders
         },
         externals: ['@jupyter-widgets/base']
     },
@@ -65,7 +69,7 @@ module.exports = [
         },
         devtool: 'source-map',
         module: {
-            rules: rules
+            loaders: loaders
         },
         externals: ['@jupyter-widgets/base']
     }
