@@ -8,8 +8,8 @@ jupyter contrib nbextension install --user
 python setup.py install
 pip install -e .
 
-jupyter nbextension install --py --symlink --sys-prefix jupyterSigplot
-jupyter nbextension enable --py --sys-prefix jupyterSigplot/static/index
+jupyter nbextension install --py jupyterSigplot
+jupyter nbextension enable --py jupyterSigplot
 
 
 jupyter trust Untitled.ipynb
