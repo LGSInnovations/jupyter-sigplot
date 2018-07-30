@@ -9,7 +9,6 @@ python setup.py install
 pip install -e .
 
 jupyter nbextension install --py --symlink --sys-prefix jupyterSigplot
-jupyter nbextension enable --py --sys-prefix jupyterSigplot
 jupyter nbextension enable --py --sys-prefix jupyterSigplot/static/index
 
 

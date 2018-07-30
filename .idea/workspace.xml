@@ -65,8 +65,8 @@
       <file leaf-file-name="postBuild" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/postBuild">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+            <state relative-caret-position="225">
+              <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
             </state>
           </provider>
         </entry>
@@ -316,7 +316,14 @@
       <option name="project" value="LOCAL" />
       <updated>1532980912590</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="chaged Postbuild">
+      <created>1532981732075</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1532981732075</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -372,7 +379,8 @@
     <MESSAGE value="fixed lib/src issues" />
     <MESSAGE value="fixed postBuild" />
     <MESSAGE value="Got Sigplot to render" />
-    <option name="LAST_COMMIT_MESSAGE" value="Got Sigplot to render" />
+    <MESSAGE value="chaged Postbuild" />
+    <option name="LAST_COMMIT_MESSAGE" value="chaged Postbuild" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/jupyterSigplot/static/extension.js">
@@ -657,8 +665,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/postBuild">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+        <state relative-caret-position="225">
+          <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
         </state>
       </provider>
     </entry>
