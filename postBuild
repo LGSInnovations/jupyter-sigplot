@@ -2,7 +2,7 @@ pip install jupyter_contrib_nbextensions
 
 
 pip install --user jupyter
-jupyter contrib nbextension install --user
+jupyter contrib nbextension install
 
 
 python setup.py install
