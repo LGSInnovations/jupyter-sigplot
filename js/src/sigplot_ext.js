@@ -1,9 +1,4 @@
-
-
-
 var widgets = require('@jupyter-widgets/base');
-
-
 var sigplot= require("sigplot")
 
 
@@ -24,8 +19,14 @@ var SigPlotView = widgets.DOMWidgetView.extend({
      * Instantiates the plot, attaches it to the DOM, and sets up change listeners
      * on the kernel-side (i.e., the model)
      */
-
-
+    defaults: _.extend(_.result(this, 'widgets.DOMWidgetModel.prototype.defaults'), {
+        _model_name : 'SigPlotModel',
+        _view_name : 'SigPlotView',
+        _model_module : 'jupyterSigplot',
+        _view_module : 'jupyterSigplot',
+        _model_module_version : '0.1.0',
+        _view_module_version : '0.1.0'
+    }),
     render: function() {
 
         // Instantiate a new plot and attach to the element provided in `this.$el[0]`
@@ -40,7 +41,6 @@ var SigPlotView = widgets.DOMWidgetView.extend({
         }, 0);
         var i;
         for (i =0; i<this.model.get('oldArrays').length; i++){
-            console.log(this.model.get('oldArrays'));
             this.plot.overlay_array(
                 this.model.get('oldArrays')[i].data,
                 this.model.get('oldArrays')[i].overrides,
@@ -111,9 +111,10 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           document.body.removeChild(link);
         }, 2000);
       }
-
     }
 });
+
+
 
 module.exports = {
     SigPlotModel: SigPlotModel,
