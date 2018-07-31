@@ -23,9 +23,6 @@ from IPython.display import (
     Image
 )
 
-class URL:
-    def __init__(self, url):
-        self.url = url
 
 class SigPlot(widgets.DOMWidget):
     _view_module_version = Unicode('0.0.1')
