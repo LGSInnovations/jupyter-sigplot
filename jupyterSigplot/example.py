@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from ipywidgets import widgets
 
 import os
-import numpy as np
 
 from traitlets import (
     Unicode,
