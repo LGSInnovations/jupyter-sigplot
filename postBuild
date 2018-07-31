@@ -8,5 +8,7 @@ jupyter contrib nbextension install
 python setup.py install
 pip install -e .
 
+jupyter nbextension enable --py widgetsnbextension
+jupyter nbextension enable jupyterSigplot/static/extension
 
 jupyter trust Untitled.ipynb
