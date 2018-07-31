@@ -1,14 +1,11 @@
 pip install jupyter_contrib_nbextensions
 
-pip install ipywidgets
+pip install -e .
 pip install --user jupyter
 jupyter contrib nbextension install
-
-
 python setup.py install
-pip install -e .
 
-jupyter nbextension enable --py widgetsnbextension
-jupyter nbextension enable nbextensions/jupyterSigplot/*
+jupyter nbextension enable jupyterSigplot
+
 
 jupyter trust Untitled.ipynb
