@@ -11,11 +11,6 @@ from traitlets import (
 )
 import requests
 
-try:
-    import bluefile
-except ImportError:
-    bluefile = None
-
 from IPython.core.magic import register_line_cell_magic
 from IPython.display import (
     display,

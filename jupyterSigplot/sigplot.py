@@ -11,11 +11,6 @@ from traitlets import (
 )
 import requests
 
-try:
-    import bluefile
-except ImportError:
-    bluefile = None
-
 from IPython.core.magic import register_line_cell_magic
 from IPython.display import (
     display,
@@ -111,16 +106,6 @@ class SigPlot(widgets.DOMWidget):
         if not fpath.startswith("http"):
             # expand out environment variables and ~
             fpath = os.path.expanduser(os.path.expandvars(fpath))
-            # if the file doesn't exist, perhaps it's in a MIDAS aux
-            if not os.path.exists(fpath):
-                # expand out the aux
-                try:
-                    fpath_new = bluefile.form_read_path(fpath)
-                    if not os.path.exists(fpath_new):
-                        raise IOError("No such file %s" % fpath_new)
-                    fpath = fpath_new
-                except AttributeError:
-                    raise IOError("No such file %s" % fpath)
 
             symlink = False
             if not os.path.isabs(fpath):
