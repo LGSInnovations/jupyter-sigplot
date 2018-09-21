@@ -12,7 +12,7 @@ To install use ``pip``::
     $ jupyter nbextension enable --py --sys-prefix jupyter-sigplot
 
 
-For a development installation (requires npm)::
+For a development installation (requires ``npm``)::
 
     $ git clone https://github.com/LGSInnovations/jupyter-sigplot.git
     $ cd jupyter-sigplot
