@@ -21,8 +21,8 @@ var HelloModel = widgets.DOMWidgetModel.extend({
     defaults: _.extend(widgets.DOMWidgetModel.prototype.defaults(), {
         _model_name : 'HelloModel',
         _view_name : 'HelloView',
-        _model_module : 'jupyterSigplot',
-        _view_module : 'jupyterSigplot',
+        _model_module : 'jupyter_sigplot',
+        _view_module : 'jupyter_sigplot',
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0',
         value : 'Hello World'

@@ -9,7 +9,7 @@ def _jupyter_nbextension_paths():
     return [{
         'section': 'notebook',
         'src': 'static',
-        'dest': 'jupyterSigplot',
-        'require': 'jupyterSigplot/extension'
+        'dest': 'jupyter_sigplot',
+        'require': 'jupyter_sigplot/extension'
     }]
 

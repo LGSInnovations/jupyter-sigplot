@@ -1,14 +1,14 @@
-var jupyterSigplot = require('./index');
+var jupyter_sigplot = require('./index');
 var base = require('@jupyter-widgets/base');
 
 module.exports = {
-  id: 'jupyterSigplot',
+  id: 'jupyter_sigplot',
   requires: [base.IJupyterWidgetRegistry],
   activate: function(app, widgets) {
       widgets.registerWidget({
-          name: 'jupyterSigplot',
-          version: jupyterSigplot.version,
-          exports: jupyterSigplot
+          name: 'jupyter_sigplot',
+          version: jupyter_sigplot.version,
+          exports: jupyter_sigplot
       });
   },
   autoStart: true

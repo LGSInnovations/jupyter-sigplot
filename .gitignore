@@ -6,7 +6,7 @@ build/
 node_modules/
 
 # Compiled javascript
-jupyterSigplot/static/
+jupyter_sigplot/static/
 
 # OS X
 .DS_Store

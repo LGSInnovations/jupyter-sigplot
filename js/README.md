@@ -7,5 +7,5 @@ Package Install
 - [node](http://nodejs.org/)
 
 ```bash
-npm install --save jupyterSigplot
+npm install --save jupyter_sigplot
 ```

@@ -6,8 +6,8 @@ var SigPlotModel = widgets.DOMWidgetModel.extend({
     defaults: _.extend(_.result(this, 'widgets.DOMWidgetModel.prototype.defaults'), {
         _model_name : 'SigPlotModel',
         _view_name : 'SigPlotView',
-        _model_module : 'jupyterSigplot',
-        _view_module : 'jupyterSigplot',
+        _model_module : 'jupyter_sigplot',
+        _view_module : 'jupyter_sigplot',
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0'
     })
@@ -22,8 +22,8 @@ var SigPlotView = widgets.DOMWidgetView.extend({
     defaults: _.extend(_.result(this, 'widgets.DOMWidgetModel.prototype.defaults'), {
         _model_name : 'SigPlotModel',
         _view_name : 'SigPlotView',
-        _model_module : 'jupyterSigplot',
-        _view_module : 'jupyterSigplot',
+        _model_module : 'jupyter_sigplot',
+        _view_module : 'jupyter_sigplot',
         _model_module_version : '0.1.0',
         _view_module_version : '0.1.0'
     }),

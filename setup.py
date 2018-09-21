@@ -66,8 +66,8 @@ class NPM(Command):
     node_modules = os.path.join(node_root, 'node_modules')
 
     targets = [
-        os.path.join(here, 'jupyterSigplot', 'static', 'extension.js'),
-        os.path.join(here, 'jupyterSigplot', 'static', 'index.js')
+        os.path.join(here, 'jupyter_sigplot', 'static', 'extension.js'),
+        os.path.join(here, 'jupyter_sigplot', 'static', 'index.js')
     ]
 
     def initialize_options(self):
@@ -121,22 +121,22 @@ class NPM(Command):
         update_package_data(self.distribution)
 
 version_ns = {}
-with open(os.path.join(here, 'jupyterSigplot', '_version.py')) as f:
+with open(os.path.join(here, 'jupyter_sigplot', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 setup_args = {
-    'name': 'jupyterSigplot',
+    'name': 'jupyter_sigplot',
     'version': version_ns['__version__'],
     'description': 'A Custom Jupyter Widget Library',
     'long_description': LONG_DESCRIPTION,
     'include_package_data': True,
     'data_files': [
-        ('share/jupyter/nbextensions/jupyterSigplot', [
-            'jupyterSigplot/static/extension.js',
-            'jupyterSigplot/static/index.js',
-            'jupyterSigplot/static/index.js.map',
+        ('share/jupyter/nbextensions/jupyter_sigplot', [
+            'jupyter_sigplot/static/extension.js',
+            'jupyter_sigplot/static/index.js',
+            'jupyter_sigplot/static/index.js.map',
         ],),
-        ('etc/jupyter/nbconfig/notebook.d/' ,['jupyterSigplot.json'])
+        ('etc/jupyter/nbconfig/notebook.d/' ,['jupyter_sigplot.json'])
     ],
     'install_requires': [
         'ipywidgets>=7.0.0',
@@ -152,7 +152,7 @@ setup_args = {
 
     'author': '',
     'author_email': '',
-    'url': 'https://github.com/LGS Innovations/jupyterSigplot',
+    'url': 'https://github.com/LGSInnovations/jupyter_sigplot',
     'keywords': [
         'ipython',
         'jupyter',

@@ -1,12 +1,12 @@
 {
-  "name": "jupyterSigplot",
+  "name": "jupyter_sigplot",
   "version": "0.1.0",
   "description": "Sigplot for Jupyter Notebooks",
   "author": "Michael Amat",
   "main": "src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/amatma/jupyterSigplot.git"
+    "url": "https://github.com/amatma/jupyter_sigplot.git"
   },
   "keywords": [
     "jupyter",

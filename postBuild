@@ -1,5 +1,5 @@
 python setup.py build
 pip install -e .
-jupyter nbextension install --py --symlink --sys-prefix jupyterSigplot
-jupyter nbextension enable jupyterSigplot --py --sys-prefix
+jupyter nbextension install --py --symlink --sys-prefix jupyter_sigplot
+jupyter nbextension enable jupyter_sigplot --py --sys-prefix
 jupyter trust JupyterSigplot.ipynb
