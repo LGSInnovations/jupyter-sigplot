@@ -1,5 +1,7 @@
 jupyter-sigplot
 ===============================
+.. image:: https://img.shields.io/pypi/v/nine.svg   :alt: PyPI   :target: https://test.pypi.org/project/jupyter-sigplot/
+
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
 
