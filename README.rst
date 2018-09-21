@@ -3,7 +3,7 @@ jupyter-sigplot
 |Pip|_ |Prs|_
 
 .. |Pip| image:: https://img.shields.io/pypi/v/nine.svg
-.. _Pip: https://test.pypi.org/project/jupyter-sigplot/
+.. _Pip: https://pypi.org/project/jupyter-sigplot/
 
 .. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 .. _Prs: .github/CONTRIBUTING.md#pull-requests
