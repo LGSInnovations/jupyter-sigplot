@@ -1,4 +1,4 @@
-jupyterSigplot
+Jupyter Sigplot
 ===============================
 
 A Custom Jupyter Widget Library
