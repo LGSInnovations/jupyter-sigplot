@@ -22,7 +22,7 @@ log.set_verbosity(log.DEBUG)
 log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
 
-LONG_DESCRIPTION = 'A Custom Jupyter Widget Library'
+LONG_DESCRIPTION = 'Jupyter Notebook Widget for the SigPlot plotting library'
 
 def js_prerelease(command, strict=False):
     """decorator for building minified js/css prior to another command"""
@@ -127,7 +127,7 @@ with open(os.path.join(here, 'jupyter_sigplot', '_version.py')) as f:
 setup_args = {
     'name': 'jupyter_sigplot',
     'version': version_ns['__version__'],
-    'description': 'A Custom Jupyter Widget Library',
+    'description': 'Jupyter Notebook Widget for the SigPlot plotting library',
     'long_description': LONG_DESCRIPTION,
     'include_package_data': True,
     'data_files': [
@@ -150,13 +150,19 @@ setup_args = {
         'jsdeps': NPM,
     },
 
-    'author': '',
-    'author_email': '',
+    'author': 'LGS Innovations',
+    'author_email': 'sigplot@lgsinnovations.com',
     'url': 'https://github.com/LGSInnovations/jupyter_sigplot',
     'keywords': [
         'ipython',
         'jupyter',
         'widgets',
+        'sigplot',
+        'plot',
+        'plotting',
+        'dsp',
+        'sdr',
+        'software defined radio'
     ],
     'classifiers': [
         'Development Status :: 4 - Beta',
