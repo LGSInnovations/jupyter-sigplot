@@ -152,7 +152,7 @@ setup_args = {
 
     'author': 'LGS Innovations',
     'author_email': 'sigplot@lgsinnovations.com',
-    'url': 'https://github.com/LGSInnovations/jupyter_sigplot',
+    'url': 'https://github.com/LGSInnovations/jupyter-sigplot',
     'keywords': [
         'ipython',
         'jupyter',
