@@ -1,12 +1,12 @@
-Jupyter Sigplot
+jupyter-sigplot
 ===============================
 
-A Custom Jupyter Widget Library
+A Custom Jupyter Widget Library for the SigPlot plotting library
 
 Installation
 ------------
 
-To install use pip:
+To install use ``pip``:
 
     $ pip install jupyter-sigplot
     $ jupyter nbextension enable --py --sys-prefix jupyter-sigplot
