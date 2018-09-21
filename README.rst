@@ -1,7 +1,12 @@
 jupyter-sigplot
 ===============================
-.. image:: https://img.shields.io/pypi/v/nine.svg   :alt: PyPI   :target: https://test.pypi.org/project/jupyter-sigplot/
-.. image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg :alt: PRS Welcome :target: https://github/CONTRIBUTING.md#pull-requests
+|Pip|_ |Prs|_
+
+.. |Pip| image:: https://img.shields.io/pypi/v/nine.svg
+.. _Pip: https://test.pypi.org/project/jupyter-sigplot/
+
+.. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg :alt: PRS Welcome :target: 
+.. _Prs: .github/CONTRIBUTING.md#pull-requests
 
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
