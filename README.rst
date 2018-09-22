@@ -2,7 +2,7 @@ jupyter-sigplot
 ===============================
 |Pip|_ |Prs|_ |Apache2|_
 
-.. |Pip| image:: https://img.shields.io/pypi/v/nine.svg
+.. |Pip| image:: https://img.shields.io/badge/pypi-v0.1.0-blue.svg
 .. _Pip: https://pypi.org/project/jupyter-sigplot/
 
 .. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
