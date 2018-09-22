@@ -13,6 +13,8 @@ jupyter-sigplot
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
 
+.. image:: docs/jupyter_sigplot_example.gif
+
 Installation
 ------------
 
