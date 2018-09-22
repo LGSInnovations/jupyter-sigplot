@@ -9,13 +9,19 @@ git add the _version.py file and git commit::
 
 Update _version.py (add 'dev' and increment minor)::
 
-    $ git add and git commit
-    $ git push
+    $ git add
+    $ git commit
+    $ git push origin master
     $ git push --tags
 
-To release a new version of jupyter_sigplot on NPM:::
+To release a new version of jupyter_sigplot on NPM::
 
     $ # clean out the `dist` and `node_modules` directories
     $ git clean -fdx
     $ npm install
     $ npm publish
+
+Alternatively, ``pip install twine`` and then run::
+
+    $ python setup.py sdist
+    $ twine upload dist/*
