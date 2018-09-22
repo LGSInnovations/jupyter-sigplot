@@ -1,6 +1,6 @@
 jupyter-sigplot
 ===============================
-|Pip|_ |Prs|_
+|Pip|_ |Prs|_ |Apache2|_
 
 .. |Pip| image:: https://img.shields.io/pypi/v/nine.svg
 .. _Pip: https://pypi.org/project/jupyter-sigplot/
@@ -8,6 +8,8 @@ jupyter-sigplot
 .. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 .. _Prs: .github/CONTRIBUTING.md#pull-requests
 
+.. |Apache2| image:: https://img.shields.io/badge/license-Apache%202.0-orange.svg
+.. _Apache2: https://opensource.org/licenses/Apache-2.0
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
 
