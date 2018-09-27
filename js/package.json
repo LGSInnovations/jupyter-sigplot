@@ -33,7 +33,7 @@
     "britecharts": "^1.7.2",
     "d3": "^4.9.1",
     "jupyter-js-widgets": "^2.1.4",
-    "sigplot": "github:LGSInnovations/sigplot",
+    "sigplot": "^2.0.0-rc6",
     "underscore": "^1.8.3"
   }
 }
