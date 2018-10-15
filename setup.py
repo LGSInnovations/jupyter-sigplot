@@ -22,7 +22,8 @@ log.set_verbosity(log.DEBUG)
 log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
 
-LONG_DESCRIPTION = 'Jupyter Notebook Widget for the SigPlot plotting library'
+with open('README.rst') as f:
+    LONG_DESCRIPTION = f.read()
 
 def js_prerelease(command, strict=False):
     """decorator for building minified js/css prior to another command"""
