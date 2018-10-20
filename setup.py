@@ -147,6 +147,8 @@ setup_args = {
         ],
     ), ('etc/jupyter/nbconfig/notebook.d/', ['jupyter_sigplot.json'])],
     'install_requires': [
+        'ipython==5.7.0',
+        'notebook==5.4.1',
         'ipywidgets>=7.0.0',
         'numpy',
         'requests',
