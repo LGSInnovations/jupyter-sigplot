@@ -1,21 +1,24 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 import os
+
 import numpy as np
+
 import ipywidgets as widgets
 from traitlets import (
     Unicode,
     Bool,
     Dict,
-    List
+    List,
 )
+
 import requests
 
 from IPython.core.magic import register_line_cell_magic
 from IPython.display import (
     display,
     clear_output,
-    Image
+    Image,
 )
 
 
@@ -28,20 +31,20 @@ class SigPlot(widgets.DOMWidget):
     href_obj = Dict().tag(sync=True)
     array_obj = Dict().tag(sync=True)
     done = Bool(False).tag(sync=True)
-    options= Dict().tag(sync=True)
-    inputs= []
-    arrays=[]
-    hrefs=[]
+    options = Dict().tag(sync=True)
+    inputs = []
+    arrays = []
+    hrefs = []
     oldArrays = List().tag(sync=True)
     oldHrefs = List().tag(sync=True)
-    imageOutput= Unicode("img").tag(sync=True)
-    dimension=1
+    imageOutput = Unicode("img").tag(sync=True)
+    dimension = 1
 
     def __init__(self, *args, **kwargs):
-        self.inputs=[]
-        self.hrefs=[]
-        self.arrays=[]
-        self.options=kwargs
+        self.inputs = []
+        self.hrefs = []
+        self.arrays = []
+        self.options = kwargs
         for arg in args:
             if isinstance(arg, str):
                 self.overlay_href(arg)
@@ -50,13 +53,7 @@ class SigPlot(widgets.DOMWidget):
         super(SigPlot, self).__init__(**kwargs)
 
     def change_settings(self, **kwargs):
-        o={}
-        for k, v in self.options.items():
-            o[k]= self.options.get(k)
-        for k in kwargs.keys():
-            o[k]= kwargs.get(k)
-        self.options=o
-
+        self.options.update(kwargs)
 
     def show_array(self, data, layer_type="1D", subsize=None):
         overrides = {}
@@ -79,6 +76,9 @@ class SigPlot(widgets.DOMWidget):
 
     @register_line_cell_magic
     def overlay_array(self, data):
+        if not isinstance(data, (list, tuple, np.ndarray)):
+            raise TypeError("``data`` can only be Union[List, Tuple, np.ndarray]")
+
         self.inputs.append(data)
 
     def show_href(self, fpath, layer_type):
@@ -137,7 +137,8 @@ class SigPlot(widgets.DOMWidget):
                     pass
 
                 # file will be symlinked to ${CWD}/data/
-                file_in_data_dir = os.path.join(os.getcwd(), 'data', os.path.basename(fpath))
+                file_in_data_dir = os.path.join(os.getcwd(), 'data',
+                                                os.path.basename(fpath))
 
                 print(file_in_data_dir)
                 print(fpath)
@@ -147,7 +148,6 @@ class SigPlot(widgets.DOMWidget):
                 try:
                     os.symlink(fpath, file_in_data_dir)
                 except FileExistsError:
-
                     pass
 
                 # set ``fpath`` to just the relative path so we can get it via
@@ -158,32 +158,24 @@ class SigPlot(widgets.DOMWidget):
             "filename": fpath,
             "layerType": layer_type,
         }
-        if self.href_obj not in self.hrefs :
+        if self.href_obj not in self.hrefs:
             self.hrefs.append(self.href_obj)
             self.oldHrefs = self.hrefs
 
     @register_line_cell_magic
     def overlay_href(self, path):
         if path.startswith("http"):
-            url=path;
-            r= requests.get(url)
-            filename=self.getFileName(path)
+            url = path
+            r = requests.get(url)
+            filename = path.split('/')[-1]
             with open(filename, 'wb') as f:
                 f.write(r.content)
             self.inputs.append(filename)
-        else :
+        else:
             self.inputs.append(path)
 
-    def getFileName(self, path):
-        dirs=path.split('/')
-        return dirs[len(dirs) - 1]
-
-
-
-    def displayAsPNG(self):
+    def display_as_png(self):
         print("Hello")
-
-
 
     @register_line_cell_magic
     def plot(self, layer_type='1D', subsize=None):
@@ -192,38 +184,38 @@ class SigPlot(widgets.DOMWidget):
             for arg in self.inputs:
                 if isinstance(arg, (tuple, list, np.ndarray)):
                     data = arg
-                    if (layer_type=="2D"):
-                        data=np.asarray(data)
+                    if layer_type == "2D":
+                        data = np.asarray(data)
                         if len(data.shape) != 2 and subsize is None:
                             raise ValueError(
                                 "Data passed in needs to be a 2-D array or ``subsize`` must be provided"
                             )
-                        elif len(data.shape)==2:
-                            subsize= data.shape[-1]
-                            data=data.flatten().tolist()
+                        elif len(data.shape) == 2 and subsize is None:
+                            subsize = data.shape[-1]
+                            data = data.flatten().tolist()
+                        elif len(data.shape) == 2 and subsize is not None:
+                            data = data.flatten().tolist()
                         else:
-                            data=arg
+                            raise ValueError(
+                                "the dimensionality of ``data`` is %d" % len(data.shape)
+                            )
                     else:
                         if isinstance(arg, np.ndarray):
                             data = data.tolist()
-                    self.show_array(data, layer_type=layer_type, subsize=subsize)
+                    self.show_array(
+                        data, layer_type=layer_type, subsize=subsize)
 
                 else:
                     sub_args = arg.split('|')
                     for sub_arg in sub_args:
                         self.show_href(sub_arg, layer_type)
-            self.done=True
+            self.done = True
         except Exception:
             clear_output()
             raise
 
-
     @register_line_cell_magic
     def overlay_file(self, path):
+        if not isinstance(path, str):
+            raise TypeError("``path`` must be a string or ``Path`` (Python 3) type")
         self.inputs.append(path)
-
-
-
-
-
-
