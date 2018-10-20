@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from ._version import version_info, __version__
-from notebook import nbextensions
 
 
 def _jupyter_nbextension_paths():
@@ -25,6 +24,5 @@ def _jupyter_nbextension_paths():
 __all__ = [
     version_info,
     __version__,
-    nbextensions,
     _jupyter_nbextension_paths,
 ]
