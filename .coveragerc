@@ -1,0 +1,9 @@
+[run]
+branch = True
+source =
+    jupyter_sigplot
+
+[paths]
+source =
+    jupyter_sigplot
+    test
