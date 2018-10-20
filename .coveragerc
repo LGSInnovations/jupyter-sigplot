@@ -2,6 +2,9 @@
 branch = True
 source =
     jupyter_sigplot
+omit =
+    jupyter_sigplot/__init__.py
+    jupyter_sigplot/_version.py
 
 [paths]
 source =
