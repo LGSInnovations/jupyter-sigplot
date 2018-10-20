@@ -2,8 +2,8 @@ jupyter-sigplot
 ===============================
 |Pip|_ |Prs|_ |Apache2|_ |Travis|_
 
-.. |Pip| image:: https://img.shields.io/badge/pypi-v0.1.0-blue.svg
-.. _Pip: https://pypi.org/project/jupyter-sigplot/
+.. |Pip| image:: https://badge.fury.io/py/jupyter-sigplot.svg
+.. _Pip: https://badge.fury.io/py/jupyter-sigplot.svg
 
 .. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 .. _Prs: .github/CONTRIBUTING.md#pull-requests
