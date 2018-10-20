@@ -3,7 +3,7 @@ jupyter-sigplot
 |Pip|_ |Prs|_ |Apache2|_ |Travis|_
 
 .. |Pip| image:: https://badge.fury.io/py/jupyter-sigplot.svg
-.. _Pip: https://badge.fury.io/py/jupyter-sigplot.svg
+.. _Pip: https://badge.fury.io/py/jupyter-sigplot
 
 .. |Prs| image:: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 .. _Prs: .github/CONTRIBUTING.md#pull-requests
