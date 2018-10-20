@@ -6,8 +6,8 @@ python:
   - "3.6"
 matrix:
   include:
-    - python: 2.7
-      env: FLAKE8=YES COVERAGE=YES PYLINT=YES
+    - python: 3.6
+      env: TOXENV=coverage
 install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements.txt
