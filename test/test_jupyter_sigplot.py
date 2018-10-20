@@ -6,11 +6,9 @@ from mock import patch
 import numpy as np
 from IPython.testing.globalipapp import get_ipython
 
-
 ip = get_ipython()
 
-
-from jupyter_sigplot.sigplot import SigPlot
+from jupyter_sigplot.sigplot import SigPlot  # noqa: E402
 
 
 def test_empty_object():
@@ -50,7 +48,7 @@ def test_show_1d_array():
     assert plot.arrays == []
     assert plot.array_obj == {}
 
-    data = [1,2,3]
+    data = [1, 2, 3]
     layer_type = '1D'
     plot.show_array(data, layer_type=layer_type)
 
@@ -68,14 +66,16 @@ def test_subsize_show_2d_array():
     assert plot.arrays == []
     assert plot.array_obj == {}
 
-    data = [[1,2,3], [3,4,5]]
+    data = [[1, 2, 3], [3, 4, 5]]
     layer_type = '2D'
     subsize = len(data[0])
     plot.show_array(data, layer_type=layer_type, subsize=subsize)
 
     array_obj = {
         "data": data,
-        "overrides": {"subsize": subsize},
+        "overrides": {
+            "subsize": subsize
+        },
         "layerType": layer_type,
     }
     assert plot.array_obj == array_obj
@@ -84,7 +84,7 @@ def test_subsize_show_2d_array():
 
 def test_no_subsize_show_2d_array():
     plot = SigPlot()
-    data = [[1,2,3], [3,4,5]]
+    data = [[1, 2, 3], [3, 4, 5]]
     with pytest.raises(ValueError):
         plot.show_array(data, layer_type='2D', subsize=None)
 
@@ -256,7 +256,10 @@ def test_plot_mixed(show_array_mock, show_href_mock):
     assert show_href_mock.call_args[0] == (href, "1D")
 
     assert show_array_mock.call_args[0] == (arr, )
-    assert show_array_mock.call_args[1] == {"layer_type": "1D", "subsize": None}
+    assert show_array_mock.call_args[1] == {
+        "layer_type": "1D",
+        "subsize": None
+    }
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
@@ -270,7 +273,10 @@ def test_plot_1d(show_array_mock):
     assert show_array_mock.call_count == 1
     print(show_array_mock.call_args)
     assert show_array_mock.call_args[0] == (arr.tolist(), )
-    assert show_array_mock.call_args[1] == {"layer_type": "1D", "subsize": None}
+    assert show_array_mock.call_args[1] == {
+        "layer_type": "1D",
+        "subsize": None
+    }
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
@@ -283,7 +289,10 @@ def test_plot_2d_no_subsize(show_array_mock):
     plot.plot(layer_type="2D")
     assert show_array_mock.call_count == 1
     assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
-    assert show_array_mock.call_args[1] == {"layer_type": "2D", "subsize": len(arr[0])}
+    assert show_array_mock.call_args[1] == {
+        "layer_type": "2D",
+        "subsize": len(arr[0])
+    }
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
@@ -297,7 +306,10 @@ def test_plot_2d_with_subsize(show_array_mock):
     plot.plot(layer_type="2D", subsize=subsize)
     assert show_array_mock.call_count == 1
     assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
-    assert show_array_mock.call_args[1] == {"layer_type": "2D", "subsize": subsize}
+    assert show_array_mock.call_args[1] == {
+        "layer_type": "2D",
+        "subsize": subsize
+    }
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
@@ -309,11 +321,11 @@ def test_plot_3d(show_array_mock):
 
     subsize = len(arr[0])
     with pytest.raises(ValueError):
-        plot.plot(layer_type="2D", subsize=len(arr[0]))
+        plot.plot(layer_type="2D", subsize=subsize)
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
-def test_plot_3d(show_array_mock):
+def test_plot_expected_2d(show_array_mock):
     arr = [1, 2, 3, 4]
 
     plot = SigPlot(arr)

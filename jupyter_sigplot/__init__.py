@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 from ._version import version_info, __version__
-import os.path
-import sys
-import warnings
 from notebook import nbextensions
 
 
@@ -23,3 +20,11 @@ def _jupyter_nbextension_paths():
         # _also_ in the `nbextension/` namespace
         'require': 'jupyter_sigplot/extension'
     }]
+
+
+__all__ = [
+    version_info,
+    __version__,
+    nbextensions,
+    _jupyter_nbextension_paths,
+]

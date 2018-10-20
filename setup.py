@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 from setuptools import setup, find_packages, Command
 from setuptools.command.sdist import sdist
@@ -7,6 +8,8 @@ from subprocess import check_call
 import os
 import sys
 import platform
+from distutils import log
+from jupyter_sigplot import _version
 
 here = os.path.dirname(os.path.abspath(__file__))
 node_root = os.path.join(here, 'js')
@@ -14,10 +17,9 @@ is_repo = os.path.exists(os.path.join(here, '.git'))
 
 npm_path = os.pathsep.join([
     os.path.join(node_root, 'node_modules', '.bin'),
-                os.environ.get('PATH', os.defpath),
+    os.environ.get('PATH', os.defpath),
 ])
 
-from distutils import log
 log.set_verbosity(log.DEBUG)
 log.info('setup.py entered')
 log.info('$PATH=%s' % os.environ['PATH'])
@@ -25,8 +27,10 @@ log.info('$PATH=%s' % os.environ['PATH'])
 with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
+
 def js_prerelease(command, strict=False):
     """decorator for building minified js/css prior to another command"""
+
     class DecoratedCommand(command):
         def run(self):
             jsdeps = self.distribution.get_command_obj('jsdeps')
@@ -49,7 +53,9 @@ def js_prerelease(command, strict=False):
                     log.warn(str(e))
             command.run(self)
             update_package_data(self.distribution)
+
     return DecoratedCommand
+
 
 def update_package_data(distribution):
     """update package_data to catch changes during setup"""
@@ -78,67 +84,68 @@ class NPM(Command):
         pass
 
     def get_npm_name(self):
-        npmName = 'npm';
+        npmName = 'npm'
         if platform.system() == 'Windows':
-            npmName = 'npm.cmd';
-            
-        return npmName;
-    
+            npmName = 'npm.cmd'
+
+        return npmName
+
     def has_npm(self):
-        npmName = self.get_npm_name();
+        npmName = self.get_npm_name()
         try:
             check_call([npmName, '--version'])
             return True
-        except:
+        except Exception:
             return False
 
     def should_run_npm_install(self):
-        package_json = os.path.join(node_root, 'package.json')
-        node_modules_exists = os.path.exists(self.node_modules)
         return self.has_npm()
 
     def run(self):
         has_npm = self.has_npm()
         if not has_npm:
-            log.error("`npm` unavailable.  If you're running this command using sudo, make sure `npm` is available to sudo")
+            log.error("`npm` unavailable.  If you're running this command "
+                      "using sudo, make sure `npm` is available to sudo")
 
         env = os.environ.copy()
         env['PATH'] = npm_path
 
         if self.should_run_npm_install():
-            log.info("Installing build dependencies with npm.  This may take a while...")
-            npmName = self.get_npm_name();
-            check_call([npmName, 'install'], cwd=node_root, stdout=sys.stdout, stderr=sys.stderr)
+            log.info("Installing build dependencies with npm.  "
+                     "This may take a while...")
+            npmName = self.get_npm_name()
+            check_call([npmName, 'install'],
+                       cwd=node_root,
+                       stdout=sys.stdout,
+                       stderr=sys.stderr)
             os.utime(self.node_modules, None)
 
         for t in self.targets:
             if not os.path.exists(t):
                 msg = 'Missing file: %s' % t
                 if not has_npm:
-                    msg += '\nnpm is required to build a development version of a widget extension'
+                    msg += '\nnpm is required to build a development '
+                    msg += 'version of a widget extension'
                 raise ValueError(msg)
 
         # update package data in case this created new files
         update_package_data(self.distribution)
 
-version_ns = {}
-with open(os.path.join(here, 'jupyter_sigplot', '_version.py')) as f:
-    exec(f.read(), {}, version_ns)
 
 setup_args = {
     'name': 'jupyter_sigplot',
-    'version': version_ns['__version__'],
+    'version': _version.__version__,
     'description': 'Jupyter Notebook Widget for the SigPlot plotting library',
     'long_description': LONG_DESCRIPTION,
     'include_package_data': True,
-    'data_files': [
-        ('share/jupyter/nbextensions/jupyter_sigplot', [
+    'data_files': [(
+        'share/jupyter/nbextensions/jupyter_sigplot',
+        [
             'jupyter_sigplot/static/extension.js',
             'jupyter_sigplot/static/index.js',
             'jupyter_sigplot/static/index.js.map',
-        ],),
-        ('etc/jupyter/nbconfig/notebook.d/' ,['jupyter_sigplot.json'])
-    ],
+        ],
+    ), ('etc/jupyter/nbconfig/notebook.d/', ['jupyter_sigplot.json'])],
     'install_requires': [
         'ipywidgets>=7.0.0',
         'numpy',
@@ -152,20 +159,12 @@ setup_args = {
         'sdist': js_prerelease(sdist, strict=True),
         'jsdeps': NPM,
     },
-
     'author': 'LGS Innovations',
     'author_email': 'sigplot@lgsinnovations.com',
     'url': 'https://github.com/LGSInnovations/jupyter-sigplot',
     'keywords': [
-        'ipython',
-        'jupyter',
-        'widgets',
-        'sigplot',
-        'plot',
-        'plotting',
-        'dsp',
-        'sdr',
-        'software defined radio'
+        'ipython', 'jupyter', 'widgets', 'sigplot', 'plot', 'plotting', 'dsp',
+        'sdr', 'software defined radio'
     ],
     'classifiers': [
         'Development Status :: 4 - Beta',

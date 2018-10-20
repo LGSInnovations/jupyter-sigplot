@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
+import errno
 import os
 
 import numpy as np
@@ -18,7 +19,6 @@ from IPython.core.magic import register_line_cell_magic
 from IPython.display import (
     display,
     clear_output,
-    Image,
 )
 
 
@@ -77,11 +77,13 @@ class SigPlot(widgets.DOMWidget):
     @register_line_cell_magic
     def overlay_array(self, data):
         if not isinstance(data, (list, tuple, np.ndarray)):
-            raise TypeError("``data`` can only be Union[List, Tuple, np.ndarray]")
+            raise TypeError(
+                "``data`` can only be Union[List, Tuple, np.ndarray]"
+            )
 
         self.inputs.append(data)
 
-    def show_href(self, fpath, layer_type):
+    def show_href(self, fpath, layer_type):  # noqa: C901
         """Plot a file or URL with SigPlot
 
         :param fpath: File-path to bluefile or matfile. Forms accepted:
@@ -90,8 +92,9 @@ class SigPlot(widgets.DOMWidget):
                       - paths with envvars, e.g., $HOME/foo.tmp
                       - paths with tilde, e.g., ~/foo.tmp
                       - local path, e.g., foo.tmp
-                      - file in MIDAS aux path, e.g., foo.tmp (actually in /data/midas/`whoami`/foo.tmp)
-                      - URL, e.g., http://sigplot.lgsinnovations.com/dat/sin.tmp
+                      - file in MIDAS aux path, e.g., foo.tmp
+                        (actually in /data/midas/`whoami`/foo.tmp)
+                      - URL, e.g., http://website.com/foo.tmp
         :type fpath: str
 
         :param layer_type: either '1D' or '2D'
@@ -109,8 +112,8 @@ class SigPlot(widgets.DOMWidget):
 
             symlink = False
             if not os.path.isabs(fpath):
-                # if it's not an absolute path (i.e., is relative), check if it is
-                # beyond ${CWD} or if it starts with a `..`
+                # if it's not an absolute path (i.e., is relative),
+                # check if it is beyond ${CWD} or if it starts with a `..`
                 if fpath.startswith('..'):
                     # need to symlink
                     symlink = True
@@ -147,8 +150,11 @@ class SigPlot(widgets.DOMWidget):
                 # woohoo, just use the existing one
                 try:
                     os.symlink(fpath, file_in_data_dir)
-                except FileExistsError:
-                    pass
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        print('Directory not created.')
+                    else:
+                        raise
 
                 # set ``fpath`` to just the relative path so we can get it via
                 # the Jupyter API (i.e., http://${HOST}:${PORT}/files/data/...)
@@ -177,7 +183,7 @@ class SigPlot(widgets.DOMWidget):
     def display_as_png(self):
         print("Hello")
 
-    @register_line_cell_magic
+    @register_line_cell_magic  # noqa: C901
     def plot(self, layer_type='1D', subsize=None):
         try:
             display(self)
@@ -188,7 +194,9 @@ class SigPlot(widgets.DOMWidget):
                         data = np.asarray(data)
                         if len(data.shape) != 2 and subsize is None:
                             raise ValueError(
-                                "Data passed in needs to be a 2-D array or ``subsize`` must be provided"
+                                "For layer_type 2D: data passed in needs"
+                                " to be a 2-D array or ``subsize`` "
+                                "must be provided"
                             )
                         elif len(data.shape) == 2 and subsize is None:
                             subsize = data.shape[-1]
@@ -197,7 +205,8 @@ class SigPlot(widgets.DOMWidget):
                             data = data.flatten().tolist()
                         else:
                             raise ValueError(
-                                "the dimensionality of ``data`` is %d" % len(data.shape)
+                                "For layer_type 2D: data passed in needs"
+                                " to be a 2-D array"
                             )
                     else:
                         if isinstance(arg, np.ndarray):
@@ -217,5 +226,7 @@ class SigPlot(widgets.DOMWidget):
     @register_line_cell_magic
     def overlay_file(self, path):
         if not isinstance(path, str):
-            raise TypeError("``path`` must be a string or ``Path`` (Python 3) type")
+            raise TypeError(
+                "``path`` must be a string or ``Path`` (Python 3) type"
+            )
         self.inputs.append(path)
