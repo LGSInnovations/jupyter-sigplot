@@ -135,12 +135,12 @@ class SigPlot(widgets.DOMWidget):
             if symlink:
                 # make a data directory
                 try:
-                    os.mkdir('data')
+                    os.mkdir('/tmp')
                 except OSError:
                     pass
 
                 # file will be symlinked to ${CWD}/data/
-                file_in_data_dir = os.path.join(os.getcwd(), 'data',
+                file_in_data_dir = os.path.join(os.getcwd(), 'tmp',
                                                 os.path.basename(fpath))
 
                 print(file_in_data_dir)
@@ -203,10 +203,12 @@ class SigPlot(widgets.DOMWidget):
                             data = data.flatten().tolist()
                         elif len(data.shape) == 2 and subsize is not None:
                             data = data.flatten().tolist()
+                        elif len(data.shape) == 1 and subsize is not None:
+                            data = arg
                         else:
                             raise ValueError(
                                 "For layer_type 2D: data passed in needs"
-                                " to be a 2-D array"
+                                " to be a 2-D array or provide a valid subsize"
                             )
                     else:
                         if isinstance(arg, np.ndarray):

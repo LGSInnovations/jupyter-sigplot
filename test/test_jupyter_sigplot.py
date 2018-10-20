@@ -335,6 +335,18 @@ def test_plot_expected_2d(show_array_mock):
         plot.plot(layer_type="2D")
 
 
+@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+def test_plot_expected_2d(show_array_mock):
+    arr = [1, 2, 3, 4]
+    subsize = 2
+
+    plot = SigPlot(arr)
+    assert plot.inputs == [arr]
+
+    with pytest.raises(ValueError):
+        plot.plot(layer_type="2D")
+
+
 def test_overlay_file_non_empty():
     plot = SigPlot()
     assert plot.inputs == []
