@@ -1,6 +1,6 @@
 jupyter-sigplot
 ===============================
-|Pip|_ |Prs|_ |Apache2|_ |Travis|_
+|Pip|_ |Prs|_ |Apache2|_ |Travis|_ |Binder|_
 
 .. |Pip| image:: https://badge.fury.io/py/jupyter-sigplot.svg
 .. _Pip: https://badge.fury.io/py/jupyter-sigplot
@@ -13,6 +13,9 @@ jupyter-sigplot
 
 .. |Travis| image:: https://travis-ci.org/LGSInnovations/jupyter-sigplot.svg?branch=master
 .. _Travis: https://travis-ci.org/LGSInnovations/jupyter-sigplot
+
+.. |Binder| image:: https://mybinder.org/badge.svg
+.. _Binder: https://mybinder.org/v2/gh/LGSInnovations/jupyter-sigplot/0.1.2?filepath=example%2FJupyterSigplot.ipynb
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
 
