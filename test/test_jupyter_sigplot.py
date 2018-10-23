@@ -159,7 +159,7 @@ def test_show_href_file_absolute_not_already_there(symlink_mock, mkdir_mock):
 
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0] == ('tmp', )
+    assert mkdir_mock.call_args[0] == ('/tmp', )
 
     assert symlink_mock.call_count == 1
 
@@ -176,7 +176,7 @@ def test_show_href_file_relative(symlink_mock, mkdir_mock):
 
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0] == ('tmp', )
+    assert mkdir_mock.call_args[0] == ('/tmp', )
 
     assert symlink_mock.call_count == 1
 
