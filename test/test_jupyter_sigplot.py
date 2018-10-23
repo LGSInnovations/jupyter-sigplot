@@ -340,7 +340,7 @@ def test_plot_expected_2d_with_subsize(show_array_mock):
     arr = [1, 2, 3, 4]
 
     subsize = 2
-    
+
     plot = SigPlot(arr)
     assert plot.inputs == [arr]
 
