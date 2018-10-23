@@ -344,9 +344,13 @@ def test_plot_expected_2d_with_subsize(show_array_mock):
     plot = SigPlot(arr)
     assert plot.inputs == [arr]
 
-    with pytest.raises(ValueError):
-        plot.plot(layer_type="2D", subsize=subsize)
-
+    plot.plot(layer_type="2D", subsize=subsize)
+    assert show_array_mock.call_count == 1
+    assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
+    assert show_array_mock.call_args[1] == {
+        "layer_type": "2D",
+        "subsize": subsize
+    }
 
 def test_overlay_file_non_empty():
     plot = SigPlot()
