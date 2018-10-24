@@ -30,7 +30,7 @@ var SigPlotView = widgets.DOMWidgetView.extend({
     render: function() {
 
         // Instantiate a new plot and attach to the element provided in `this.$el[0]`
-        this.plot= new sigplot.Plot(this.$el[0], this.model.get('options'));
+        this.plot = new sigplot.Plot(this.$el[0], this.model.get('options'));
 
         // Wait for element to be added to the DOM
         var self = this;
@@ -39,12 +39,11 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           self.$el.css('height', '350px');
           self.plot.checkresize()
         }, 0);
+        
         var i;
         for (i =0; i<this.model.get('oldArrays').length; i++){
-            this.plot.overlay_array(
-                this.model.get('oldArrays')[i].data,
-                this.model.get('oldArrays')[i].overrides,
-                {layerType: this.model.get('oldArrays')[i].layerType});
+            this.array_obj = this.model.get('oldArrays')[i];
+            this._plot_from_array();
         }
         for (i =0; i<this.model.get('oldHrefs').length; i++){
             this.href_obj=this.model.get('oldHrefs')[i];
@@ -107,13 +106,13 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           url,
           null,
           {layerType: href_obj.layerType}
-          );
+        );
       }
     },
 
     _done: function() {
       if (this.model.get('done')) {
-        plotLocal=this.plot
+        var plotLocal=this.plot;
         window.setTimeout(function() {
           var img = plotLocal._Mx.active_canvas.toDataURL("image/png");
           var link = document.createElement("a");
@@ -121,13 +120,12 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           link.display = img;
           document.body.appendChild(link);
           document.body.appendChild(link);
-          //document.write('<ing src="' + img +'"/>');
+          //document.write('<img src="' + img +'"/>');
           document.body.removeChild(link);
         }, 2000);
       }
     }
 });
-
 
 
 module.exports = {
