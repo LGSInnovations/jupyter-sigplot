@@ -51,11 +51,25 @@ var SigPlotView = widgets.DOMWidgetView.extend({
             this._plot_from_file();
         }
 
+        this.listenTo(this.model, 'change:options', this._change_options, this);
         this.listenTo(this.model, 'change:array_obj', this._plot_from_array, this);
         this.listenTo(this.model, 'change:href_obj', this._plot_from_file, this);
         this.listenTo(this.model, 'change:done', this._done, this);
     },
 
+    /**
+     * Handles change in options (change_settings)
+     */
+    _change_options: function() {
+      var old_options = this.model.previous('options');
+      var new_options = this.model.get('options');
+      if (old_options === new_options) {
+        return;
+      } else {
+        this.plot.change_settings(new_options);   
+      }
+    }
+    
     /**
      * Handles plotting both 1-D (xplot) and 2-D arrays (xraster)
      */
