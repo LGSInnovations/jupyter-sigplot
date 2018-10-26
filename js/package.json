@@ -18,6 +18,7 @@
     "prepare": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "license": "Apache-2.0",
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
@@ -27,13 +28,13 @@
     "style-loader": "^0.18.2",
     "css-loader": "^0.28.4",
     "json-loader": "^0.5.4",
-    "webpack": "^1.12.14"
+    "webpack": "^2"
   },
   "dependencies": {
     "britecharts": "^1.7.2",
     "d3": "^4.9.1",
     "jupyter-js-widgets": "^2.1.4",
-    "sigplot": "^2.0.0-rc7",
+    "sigplot": "^2.0.0-rc8",
     "underscore": "^1.8.3"
   }
 }
