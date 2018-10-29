@@ -67,7 +67,7 @@ var SigPlotView = widgets.DOMWidgetView.extend({
       } else {
         this.plot.change_settings(new_options);   
       }
-    }
+    },
     
     /**
      * Handles plotting both 1-D (xplot) and 2-D arrays (xraster)
