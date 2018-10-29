@@ -352,6 +352,7 @@ def test_plot_expected_2d_with_subsize(show_array_mock):
         "subsize": subsize
     }
 
+
 def test_overlay_file_non_empty():
     plot = SigPlot()
     assert plot.inputs == []
