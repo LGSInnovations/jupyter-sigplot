@@ -45,6 +45,7 @@ class SigPlot(widgets.DOMWidget):
         self.hrefs = []
         self.arrays = []
         self.options = kwargs
+        self.data_dir = 'data'
         for arg in args:
             if isinstance(arg, str):
                 self.overlay_href(arg)
@@ -65,6 +66,9 @@ class SigPlot(widgets.DOMWidget):
                 overrides.update({
                     "subsize": subsize,
                 })
+        # TODO (sat 2018-11-06): I believe this can trigger extraneous logic
+        # in the client; we should first check whether the new array_obj is
+        # already in oldArrays, and only assign to self.array_obj if it's not
         self.array_obj = {
             "data": data,
             "overrides": overrides,
@@ -92,8 +96,6 @@ class SigPlot(widgets.DOMWidget):
                       - paths with envvars, e.g., $HOME/foo.tmp
                       - paths with tilde, e.g., ~/foo.tmp
                       - local path, e.g., foo.tmp
-                      - file in MIDAS aux path, e.g., foo.tmp
-                        (actually in /data/midas/`whoami`/foo.tmp)
                       - URL, e.g., http://website.com/foo.tmp
         :type fpath: str
 
@@ -105,61 +107,13 @@ class SigPlot(widgets.DOMWidget):
         >>> display(plot)
         >>> plot.overlay_href('foo.tmp', layer_type='2D')
         """
-        # if the file is HTTP/HTTPS, SigPlot.js will handle it
-        if not fpath.startswith("http"):
-            # expand out environment variables and ~
-            fpath = os.path.expanduser(os.path.expandvars(fpath))
+        # TODO (sat 2018-11-07): I moved preparation out to overlay_href,
+        # making the docstring into a lie. Need to decide where everything
+        # belongs / what promises each function wants to make.
 
-            symlink = False
-            if not os.path.isabs(fpath):
-                # if it's not an absolute path (i.e., is relative),
-                # check if it is beyond ${CWD} or if it starts with a `..`
-                if fpath.startswith('..'):
-                    # need to symlink
-                    symlink = True
-            else:
-                # check if it is within ${CWD}
-                if fpath.startswith(os.getcwd() + '/'):
-                    # great, it's already in ${CWD}/
-                    # so we're done!
-                    fpath_without_cwd = fpath.replace(os.getcwd() + '/', '')
-                    print("not need to symlink")
-                    print(fpath_without_cwd)
-                    fpath = fpath_without_cwd
-                else:
-                    # it's somewhere else, need to symlink
-                    print("need to symlink")
-                    symlink = True
-
-            # if we need to symlink
-            if symlink:
-                # make a data directory
-                try:
-                    os.mkdir('/tmp')
-                except OSError:
-                    pass
-
-                # file will be symlinked to ${CWD}/data/
-                file_in_data_dir = os.path.join(os.getcwd(), 'tmp',
-                                                os.path.basename(fpath))
-
-                print(file_in_data_dir)
-                print(fpath)
-
-                # if the symlink fails because it already exists,
-                # woohoo, just use the existing one
-                try:
-                    os.symlink(fpath, file_in_data_dir)
-                except OSError as e:
-                    if e.errno == errno.EEXIST:
-                        print('Directory not created.')
-                    else:
-                        raise
-
-                # set ``fpath`` to just the relative path so we can get it via
-                # the Jupyter API (i.e., http://${HOST}:${PORT}/files/data/...)
-                fpath = os.path.join('data', os.path.basename(fpath))
-
+        # TODO (sat 2018-11-06): I believe this can trigger extraneous logic
+        # in the client; we should first check whether the new href_obj is
+        # already in oldHrefs, and only assign to self.href_obj if it's not
         self.href_obj = {
             "filename": fpath,
             "layerType": layer_type,
@@ -169,16 +123,13 @@ class SigPlot(widgets.DOMWidget):
             self.oldHrefs = self.hrefs
 
     @register_line_cell_magic
-    def overlay_href(self, path):
-        if path.startswith("http"):
-            url = path
-            r = requests.get(url)
-            filename = path.split('/')[-1]
-            with open(filename, 'wb') as f:
-                f.write(r.content)
-            self.inputs.append(filename)
-        else:
-            self.inputs.append(path)
+    def overlay_href(self, paths):
+        for path in paths.split('|'):
+            if path.startswith("http"):
+                prepared_path = _prepare_http_input(path, self.data_dir)
+            else:
+                prepared_path = _prepare_file_input(path, self.data_dir)
+            self.inputs.append(prepared_path)
 
     def display_as_png(self):
         print("Hello")
@@ -217,9 +168,9 @@ class SigPlot(widgets.DOMWidget):
                         data, layer_type=layer_type, subsize=subsize)
 
                 else:
-                    sub_args = arg.split('|')
-                    for sub_arg in sub_args:
-                        self.show_href(sub_arg, layer_type)
+                    # All href arguments are already separated and prepared
+                    # by overlay_href
+                    self.show_href(arg, layer_type)
             self.done = True
         except Exception:
             clear_output()
@@ -231,4 +182,116 @@ class SigPlot(widgets.DOMWidget):
             raise TypeError(
                 "``path`` must be a string or ``Path`` (Python 3) type"
             )
-        self.inputs.append(path)
+        self.overlay_href(path)
+
+
+def _require_dir(d):
+    try:
+        os.makedirs(d)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+def _local_name_for_href(url, local_dir):
+    """
+    Generate a name for the given url under directory <local_dir>
+
+    :return: A path under <local_dir> suitable for storing the contents
+             of <url>
+
+    .. note:: Different <url> values may map to the same local path
+    """
+    # This function has no side effects, unlike its primary caller,
+    # _prepare_http_input . The goal is to make testing easier.
+
+    # TODO (sat 2018-11-07): Note that a URL with a query string
+    # will result in an odd filename. Better to split the URL
+    # more completely, perhaps with urlparse.urlsplit followed by
+    # this split on '/'
+    basename = url.split('/')[-1]
+    local_path = os.path.join(local_dir, basename)
+    # TODO (sat 2018-11-07): Either deconflict this path, or
+    # decide explicitly that we don't need to
+    return local_path
+
+
+def _prepare_http_input(url, local_dir):
+    """
+    Given an input specification that starts with 'http', fetch the named
+    resource to a file in <local_dir>.
+
+    :return: A local URL that can be served without concern about CORS issues
+    """
+    _require_dir(local_dir)
+
+    local_fname = _local_name_for_href(url, local_dir)
+    r = requests.get(url)
+    with open(local_fname, 'wb') as f:
+        f.write(r.content)
+    # TODO (sat 2018-11-07): Make sure we do the right thing if <local_dir>
+    # is an absolute path, doesn't exist, etc.
+    #
+    # The client side of the widget will automatically look in the data dir
+    return local_fname
+
+
+def _unravel_path(p):
+    from os.path import (
+        realpath,
+        expanduser,
+        expandvars,
+    )
+    return realpath(expanduser(expandvars(p)))
+
+
+def _local_name_for_file(fpath, local_dir):
+    """
+    Generate a name for the given a file path under <local_dir>
+
+    :return: tuple (path, is_local) where
+             <path> is a path starting at <local_dir> suitable for storing
+                    a link to, or the contents of, <fname>
+             <is_local> is a bool, true iff <fpath> is already a
+                    descendant of <local_dir>
+
+    .. note:: Different <fname> values may map to the same local path
+
+    """
+    # TODO (sat 2018-11-07): Consider adding an optional <resolver> callable
+    # to transform <fname> into a full path. Could implement the current
+    # expanduser+expandvars, but could also implement a domain-specific search
+    # path for unadorned filenames, etc.
+
+    fpath = _unravel_path(fpath)
+    abs_local_dir = _unravel_path(local_dir)
+
+    # A bit clunky but works okay for now
+    if fpath.startswith(abs_local_dir):
+        is_local = True
+        local_relative_path = fpath[len(abs_local_dir + os.path.sep):]
+    else:
+        is_local = False
+        local_relative_path = os.path.basename(fpath)
+
+    return (os.path.join(local_dir, local_relative_path), is_local)
+
+
+def _prepare_file_input(orig_fname, local_dir):
+    input_path = _unravel_path(orig_fname)
+
+    # TODO (sat 2018-11-07): Handle errors more thoroughly
+    # * unable to make local path
+    # * symlink already exists, to wrong target
+    # * original file does not exist / has bad perms
+    _require_dir(local_dir)
+
+    # TODO (sat 2018-11-07): Do the right thing if <local_dir> is absolute
+    local_fname, is_local = _local_name_for_file(input_path, local_dir)
+    if not is_local:
+        try:
+            os.symlink(input_path, local_fname)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    return local_fname

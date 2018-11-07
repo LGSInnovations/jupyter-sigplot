@@ -100,7 +100,9 @@ var SigPlotView = widgets.DOMWidgetView.extend({
       } else {
         var url = href_obj.filename;
         if (!url.startsWith("http")) {
-          url= window.location.href.split("/").slice(0, -2).join("/")+"/files/"+ url;
+          // Server-side widget gave us a name like data/foo.tmp;
+          // Jupyter will serve this for us at the `files` route
+          url = window.location.origin + "/files/" + url;
         }
         this.plot.overlay_href(
           url,
