@@ -23,7 +23,7 @@ from IPython.display import (
 
 
 class SigPlot(widgets.DOMWidget):
-    _view_module_version = Unicode('0.0.1')
+    _view_module_version = Unicode('0.1.0')
     _view_name = Unicode('SigPlotView').tag(sync=True)
     _model_name = Unicode('SigPlotModel').tag(sync=True)
     _view_module = Unicode('jupyter_sigplot').tag(sync=True)
