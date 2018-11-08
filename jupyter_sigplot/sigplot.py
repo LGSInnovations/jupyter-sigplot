@@ -124,6 +124,8 @@ class SigPlot(widgets.DOMWidget):
 
     @register_line_cell_magic
     def overlay_href(self, paths):
+        # TODO (sat 2018-11-08): This does not trigger a plot update
+        # like show_href does. Seems like a recipe for confusion.
         for path in paths.split('|'):
             if path.startswith("http"):
                 prepared_path = _prepare_http_input(path, self.data_dir)
@@ -140,6 +142,10 @@ class SigPlot(widgets.DOMWidget):
             display(self)
             for arg in self.inputs:
                 if isinstance(arg, (tuple, list, np.ndarray)):
+                    # TODO (sat 2018-11-08): I think this needs to move into a
+                    # function so we can test it better. At that point, we may
+                    # also be able to specify it as the serializer for the
+                    # traitlet via the `to_json` keyword argument
                     data = arg
                     if layer_type == "2D":
                         data = np.asarray(data)

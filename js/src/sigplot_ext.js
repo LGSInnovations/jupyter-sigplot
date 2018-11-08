@@ -1,3 +1,5 @@
+'use strict';
+
 var widgets = require('@jupyter-widgets/base');
 var sigplot= require("sigplot")
 
@@ -39,7 +41,7 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           self.$el.css('height', '350px');
           self.plot.checkresize()
         }, 0);
-        
+
         var i;
         for (i =0; i<this.model.get('oldArrays').length; i++){
             this.array_obj = this.model.get('oldArrays')[i];
@@ -65,10 +67,10 @@ var SigPlotView = widgets.DOMWidgetView.extend({
       if (old_options === new_options) {
         return;
       } else {
-        this.plot.change_settings(new_options);   
+        this.plot.change_settings(new_options);
       }
     },
-    
+
     /**
      * Handles plotting both 1-D (xplot) and 2-D arrays (xraster)
      */
