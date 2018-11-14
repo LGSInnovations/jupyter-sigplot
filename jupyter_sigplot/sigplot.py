@@ -45,7 +45,14 @@ class SigPlot(widgets.DOMWidget):
         self.hrefs = []
         self.arrays = []
         self.options = kwargs
-        self.data_dir = 'data'
+        # Where to look for data, and where to cache/symlink remote resources
+        # that the server or client cannot access directly.
+        #
+        # TODO (sat 2018-11-16): This actually needs to be relative to the
+        # effective root of the notebook server, not just this kernel. See
+        # Github issue #17. I expect that we'll be able to just set
+        # self.data_dir to the notebook server's cwd/root and be good to go.
+        self.data_dir = ''
         for arg in args:
             if isinstance(arg, str):
                 self.overlay_href(arg)
@@ -88,15 +95,18 @@ class SigPlot(widgets.DOMWidget):
         self.inputs.append(data)
 
     def show_href(self, fpath, layer_type):  # noqa: C901
-        """Plot a file or URL with SigPlot
+        """
+        Plot a local file or URL with SigPlot. Any resource that
+        cannot be reached directly by the Jupyter server will first
+        be copied or symlinked into a subdirectory of the Jupyter
+        server's working directory.
 
         :param fpath: File-path to bluefile or matfile. Forms accepted:
-                      - absolute paths, e.g., /data/foo.tmp
-                      - relative paths, e.g., ../foo.tmp
-                      - paths with envvars, e.g., $HOME/foo.tmp
-                      - paths with tilde, e.g., ~/foo.tmp
-                      - local path, e.g., foo.tmp
-                      - URL, e.g., http://website.com/foo.tmp
+                      - Filesystem paths, e.g., /data/foo.tmp, ../foo.tmp
+                        Environment variables and ~ are expanded:
+                        - $HOME/foo.tmp
+                        - ~/foo.tmp
+                      - URLs, e.g., http://example.com/foo.tmp
         :type fpath: str
 
         :param layer_type: either '1D' or '2D'
@@ -107,31 +117,40 @@ class SigPlot(widgets.DOMWidget):
         >>> display(plot)
         >>> plot.overlay_href('foo.tmp', layer_type='2D')
         """
-        # TODO (sat 2018-11-07): I moved preparation out to overlay_href,
-        # making the docstring into a lie. Need to decide where everything
-        # belongs / what promises each function wants to make.
+        for pi in _prepare_href_input(fpath, self.data_dir):
+            obj = {
+                "filename": pi,
+                "layerType": layer_type,
+            }
+            self._show_href_internal(obj)
 
-        # TODO (sat 2018-11-06): I believe this can trigger extraneous logic
-        # in the client; we should first check whether the new href_obj is
-        # already in oldHrefs, and only assign to self.href_obj if it's not
-        self.href_obj = {
-            "filename": fpath,
-            "layerType": layer_type,
-        }
-        if self.href_obj not in self.hrefs:
-            self.hrefs.append(self.href_obj)
-            self.oldHrefs = self.hrefs
+    def _show_href_internal(self, href_obj):  # noqa: C901
+        """
+        Common internal function to actually trigger a client-side plot.
+
+        :param href_obj: Dictionary describing what to plot. Interpreted
+                         by the client. Created by user-facing functions
+                         like overlay_href and show_href.
+        :type href_obj: dict
+        """
+        # The change listener on the client will cheerfully re-plot a layer
+        # unless we're careful
+        if href_obj in self.hrefs:
+            return
+
+        self.href_obj = href_obj
+        self.hrefs.append(self.href_obj)
+        self.oldHrefs = self.hrefs
 
     @register_line_cell_magic
     def overlay_href(self, paths):
-        # TODO (sat 2018-11-08): This does not trigger a plot update
-        # like show_href does. Seems like a recipe for confusion.
-        for path in paths.split('|'):
-            if path.startswith("http"):
-                prepared_path = _prepare_http_input(path, self.data_dir)
-            else:
-                prepared_path = _prepare_file_input(path, self.data_dir)
-            self.inputs.append(prepared_path)
+        # TODO (sat 2018-11-08): This does not trigger a plot update like
+        # show_href does. Seems like a recipe for confusion. Should probably
+        # only add to self.inputs if we're not yet rendered, and otherwise
+        # jump right to _show_href_internal; or clear self.inputs after we've
+        # consumed it, add to self.inputs here, and trigger self.plot()
+        prepared_paths = _prepare_href_input(paths, self.data_dir)
+        self.inputs.extend(prepared_paths)
 
     def display_as_png(self):
         print("Hello")
@@ -175,8 +194,16 @@ class SigPlot(widgets.DOMWidget):
 
                 else:
                     # All href arguments are already separated and prepared
-                    # by overlay_href
-                    self.show_href(arg, layer_type)
+                    # by overlay_href / overlay_file (the only functions that
+                    # add hrefs to self.inputs)
+                    self._show_href_internal({
+                        "filename": arg,
+                        # TODO (sat 2018-11-09): I think we should specify
+                        # layer type in overlay_*, allowing each resource to
+                        # have its own layer type. Need to reason about
+                        # multiple 2D layers, though.
+                        "layerType": layer_type,
+                    })
             self.done = True
         except Exception:
             clear_output()
@@ -192,11 +219,16 @@ class SigPlot(widgets.DOMWidget):
 
 
 def _require_dir(d):
+    if d == '':
+        # makedirs fails on ''
+        d = '.'
+
     try:
         os.makedirs(d)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
 
 def _local_name_for_href(url, local_dir):
     """
@@ -210,11 +242,23 @@ def _local_name_for_href(url, local_dir):
     # This function has no side effects, unlike its primary caller,
     # _prepare_http_input . The goal is to make testing easier.
 
+    if not isinstance(url, str):
+        raise TypeError("url must be of type str (%r has type %s)" %
+                        (url, type(url)))
+
+    if not isinstance(local_dir, str):
+        raise TypeError("local_dir must be of type str (%r has type %s)" %
+                        (local_dir, type(local_dir)))
+
+    if not url:
+        raise ValueError("Path %r is not a valid filename" % url)
+
     # TODO (sat 2018-11-07): Note that a URL with a query string
     # will result in an odd filename. Better to split the URL
     # more completely, perhaps with urlparse.urlsplit followed by
     # this split on '/'
     basename = url.split('/')[-1]
+
     local_path = os.path.join(local_dir, basename)
     # TODO (sat 2018-11-07): Either deconflict this path, or
     # decide explicitly that we don't need to
@@ -223,10 +267,10 @@ def _local_name_for_href(url, local_dir):
 
 def _prepare_http_input(url, local_dir):
     """
-    Given an input specification that starts with 'http', fetch the named
-    resource to a file in <local_dir>.
+    Given a URI, fetch the named resource to a file in <local_dir>, to avoid
+    CORS issues.
 
-    :return: A local URL that can be served without concern about CORS issues
+    :return: A filename in the local filesystem, under <local_dir>
     """
     _require_dir(local_dir)
 
@@ -237,17 +281,14 @@ def _prepare_http_input(url, local_dir):
     # TODO (sat 2018-11-07): Make sure we do the right thing if <local_dir>
     # is an absolute path, doesn't exist, etc.
     #
-    # The client side of the widget will automatically look in the data dir
+    # The client side of the widget will automatically look for a path
+    # relative to <local_dir>
     return local_fname
 
 
-def _unravel_path(p):
-    from os.path import (
-        realpath,
-        expanduser,
-        expandvars,
-    )
-    return realpath(expanduser(expandvars(p)))
+def _unravel_path(path):
+    import os.path as p
+    return p.realpath(p.expanduser(p.expandvars(path)))
 
 
 def _local_name_for_file(fpath, local_dir):
@@ -261,13 +302,22 @@ def _local_name_for_file(fpath, local_dir):
                     descendant of <local_dir>
 
     .. note:: Different <fname> values may map to the same local path
-
     """
+    if not isinstance(fpath, str):
+        raise TypeError("fpath must be of type str (%r has type %s)" %
+                        (fpath, type(fpath)))
+
+    if not isinstance(local_dir, str):
+        raise TypeError("local_dir must be of type str (%r has type %s)" %
+                        (local_dir, type(local_dir)))
+
+    if not fpath:
+        raise ValueError("Path %r is not a valid filename" % fpath)
+
     # TODO (sat 2018-11-07): Consider adding an optional <resolver> callable
     # to transform <fname> into a full path. Could implement the current
-    # expanduser+expandvars, but could also implement a domain-specific search
+    # _unravel_path logic, but could also implement a domain-specific search
     # path for unadorned filenames, etc.
-
     fpath = _unravel_path(fpath)
     abs_local_dir = _unravel_path(local_dir)
 
@@ -283,6 +333,14 @@ def _local_name_for_file(fpath, local_dir):
 
 
 def _prepare_file_input(orig_fname, local_dir):
+    """
+    Given an arbitrary filename, determine whether that file is a child of
+    <local_dir>. If not, create a symlink under <local_dir> that points to the
+    original file, so the Jupyter server can resolve it.
+
+    :return: A filename in the local filesystem, under <local_dir>
+    """
+    import os.path as p
     input_path = _unravel_path(orig_fname)
 
     # TODO (sat 2018-11-07): Handle errors more thoroughly
@@ -295,9 +353,50 @@ def _prepare_file_input(orig_fname, local_dir):
     local_fname, is_local = _local_name_for_file(input_path, local_dir)
     if not is_local:
         try:
-            os.symlink(input_path, local_fname)
+            # If we link the unraveled path, then relative names like
+            # ../foo.tmp will become obscured. So we prefer to keep the target
+            # as raveled as possible. But we still need to make sure that we
+            # handle user specifications like ~someone and environment
+            # variables.
+            linkpath = p.expanduser(p.expandvars(orig_fname))
+            os.symlink(linkpath, local_fname)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
 
     return local_fname
+
+
+def _split_inputs(orig_inputs):
+    """
+    Given an input specification containing one or more filesystem paths and
+    URIs separated by '|', return a list of individual inputs.
+
+    * Skips blank entries
+    * Removes blank space around entries
+    """
+    # (sat 2018-11-19): If we want to support direct list inputs, this is the
+    # place to handle that.
+    inputs = orig_inputs.split('|')
+    inputs = [ii.strip() for ii in inputs]
+    inputs = [ii for ii in inputs if ii]
+    return inputs
+
+
+def _prepare_href_input(orig_inputs, local_dir):
+    """
+    Given an input specification containing one or more filesystem paths and
+    URIs separated by '|', prepare each one according to its type.
+
+    :return: A list of filenames in the local filesystem, under <local_dir>
+    """
+    prepared = []
+
+    for oi in _split_inputs(orig_inputs):
+        if oi.startswith("http"):
+            pi = _prepare_http_input(oi, local_dir)
+        else:
+            pi = _prepare_file_input(oi, local_dir)
+        prepared.append(pi)
+
+    return prepared
