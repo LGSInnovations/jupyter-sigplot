@@ -126,12 +126,15 @@ def test_show_href_url():
     plot.show_href(path, layer_type)
 
     href_obj = {
-        "filename": path,
+        "filename": "sin.tmp",
         "layerType": layer_type,
     }
     assert plot.href_obj == href_obj
     assert plot.hrefs == [href_obj]
     assert plot.oldHrefs == [href_obj]
+
+    assert os.path.exists("./sin.tmp")
+    os.remove("./sin.tmp")
 
 
 def test_show_href_file_absolute_already_in_cwd():
@@ -159,11 +162,11 @@ def test_show_href_file_absolute_not_already_there(symlink_mock, mkdir_mock):
 
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0] == ('/tmp', )
+    assert mkdir_mock.call_args[0][0] == '.'
 
     assert symlink_mock.call_count == 1
 
-    local_path = os.path.join(os.getcwd(), 'tmp', 'foo.tmp')
+    local_path = 'foo.tmp'
     fpath = os.path.expanduser(os.path.expandvars(path))
     assert symlink_mock.call_args[0] == (fpath, local_path)
 
@@ -176,11 +179,11 @@ def test_show_href_file_relative(symlink_mock, mkdir_mock):
 
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0] == ('/tmp', )
+    assert mkdir_mock.call_args[0][0] == '.'
 
     assert symlink_mock.call_count == 1
 
-    local_path = os.path.join(os.getcwd(), 'tmp', 'foo.tmp')
+    local_path = 'foo.tmp'
     fpath = os.path.expanduser(os.path.expandvars(path))
     assert symlink_mock.call_args[0] == (fpath, local_path)
 
@@ -207,7 +210,7 @@ def test_overlay_href_non_empty_http():
     os.remove("./sin.tmp")
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_href')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
 def test_plot_one_href(show_href_mock):
     href = "foo.tmp"
     plot = SigPlot(href)
@@ -215,32 +218,34 @@ def test_plot_one_href(show_href_mock):
 
     plot.plot()
     assert show_href_mock.call_count == 1
-    assert show_href_mock.call_args[0] == (href, "1D")
+    assert show_href_mock.call_args[0] == ({
+        "filename": href,
+        "layerType": "1D"},)
     assert show_href_mock.call_args[1] == {}
     assert plot.done
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_href')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
 def test_plot_two_href(show_href_mock):
     href1 = "foo.tmp"
     href2 = "sin.tmp"
     href = "|".join((href1, href2))
     plot = SigPlot(href)
-    assert plot.inputs == [href]
+    assert plot.inputs == [href1, href2]
 
     plot.plot()
     assert show_href_mock.call_count == 2
     args1, kwargs1 = show_href_mock.call_args_list[0]
-    assert args1 == (href1, "1D")
+    assert args1 == ({"filename": href1, "layerType": "1D"},)
     assert kwargs1 == {}
 
     args2, kwargs2 = show_href_mock.call_args_list[1]
-    assert args2 == (href2, "1D")
+    assert args2 == ({"filename": href2, "layerType": "1D"},)
     assert kwargs2 == {}
     assert plot.done
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_href')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
 @patch('jupyter_sigplot.sigplot.SigPlot.show_array')
 def test_plot_mixed(show_array_mock, show_href_mock):
     href = "foo.tmp"
@@ -253,7 +258,9 @@ def test_plot_mixed(show_array_mock, show_href_mock):
     assert show_href_mock.call_count == 1
     assert show_array_mock.call_count == 1
 
-    assert show_href_mock.call_args[0] == (href, "1D")
+    assert show_href_mock.call_args[0] == ({"filename": href,
+                                            "layerType": "1D",
+                                            },)
 
     assert show_array_mock.call_args[0] == (arr, )
     assert show_array_mock.call_args[1] == {
@@ -369,3 +376,247 @@ def test_overlay_file_bad_type():
     path = 3
     with pytest.raises(TypeError):
         plot.overlay_file(path)
+
+
+def test_unravel_path():
+    import time
+    from jupyter_sigplot.sigplot import _unravel_path
+
+    cwd_full = os.getcwd()
+    tilde_full = os.path.expanduser('~')
+
+    # Go all the way through the environment instead of a mock to be sure the
+    # whole thing works end to end
+    #
+    # TODO (sat 2018-11-16): Probably better to do this environment work
+    # thing using a context manager ("with")
+    env_key = 'TEST_UNRAVEL'
+    old_env_val = os.environ.get(env_key)
+    env_val = str(time.time())
+    os.environ[env_key] = env_val
+
+    cases = [
+        # input                 # expected output
+        ('',                    cwd_full),
+        ('.',                   cwd_full),
+        ('./nonesuch/..',       cwd_full),
+
+        ('~',                   tilde_full),
+
+        # Leading / because bare words are unraveled relative to cwd
+        ('/$%s' % env_key,      os.path.join('/', env_val)),
+
+        ('~/$%s' % env_key,     os.path.join(tilde_full, env_val)),
+
+        ('/',                   '/'),
+        ('/../',                '/'),
+        ('/tmp',                '/tmp'),
+        ('/tmp/foo/..',         '/tmp'),
+
+    ]
+    try:
+        for (input, expected) in cases:
+            actual = _unravel_path(input)
+            assert(actual == expected)
+    finally:
+        if old_env_val is None:
+            del os.environ[env_key]
+        else:
+            os.environ[env_key] = old_env_val
+
+
+@patch('os.mkdir')
+def test_require_dir_good_inputs(mkdir_mock):
+    from jupyter_sigplot.sigplot import _require_dir
+
+    inputs = (
+        '.',
+        'data',
+    )
+
+    for d in inputs:
+        _require_dir(d)
+        args, kwargs = mkdir_mock.call_args
+        assert args[0] == d
+
+    assert mkdir_mock.call_count == len(inputs)
+
+    # Special case: '' means '.'
+    _require_dir('')
+    assert mkdir_mock.call_args[0][0] == '.'
+
+
+def test_local_name_for_href_good_inputs():
+    from jupyter_sigplot.sigplot import _local_name_for_href
+
+    cases = [
+        # input                     # expected output
+        ('http://www.example.com/foo.tmp',      'foo.tmp'),
+        ('http://www.example.com/dat/foo.tmp',  'foo.tmp'),
+        ('https://localhost/foo.tmp',           'foo.tmp'),
+        ('https://localhost/dat/foo.tmp',       'foo.tmp'),
+    ]
+    local_dirs = ['.', 'data', 'files/data', '/path/to/data', ]
+
+    for ld in local_dirs:
+        for (input, expected) in cases:
+            actual = _local_name_for_href(input, ld)
+            expected = os.path.join(ld, expected)
+            assert(actual == expected)
+
+
+def test_local_name_for_href_bad_inputs():
+    from jupyter_sigplot.sigplot import _local_name_for_href
+    cases = [
+        # url                         local_dir       exception
+        ('http://localhost/foo.tmp',  None,           TypeError),
+        (None,                        '.',            TypeError),
+        ('',                          '.',            ValueError),
+    ]
+    for url, local_dir, etype in cases:
+        with pytest.raises(etype):
+            _local_name_for_href(url, local_dir)
+
+    # TODO (sat 2018-11-19): Decide whether we want _local_name_for_href to
+    # validate URLs more strictly; if so, add tests here.
+
+
+def test_local_name_for_file_local_good_inputs():
+    from jupyter_sigplot.sigplot import _local_name_for_file
+    cases = [
+        # input                     # expected output
+        ('foo.tmp',                 'foo.tmp'),
+        ('dat/foo.tmp',             'dat/foo.tmp'),
+    ]
+    local_dirs = ['.', 'data', 'files/data', '/path/to/data', ]
+
+    # None of these should require symlinks
+    for ld in local_dirs:
+        for (input, expected) in cases:
+            # This test could definitely be stronger. The current idea is just
+            # to ensure that some basic cases work right.
+            input = os.path.join(ld, input)
+
+            actual, is_local = _local_name_for_file(input, ld)
+            assert is_local
+            expected = os.path.join(ld, expected)
+            assert(actual == expected)
+
+
+def test_local_name_for_file_nonlocal_good_inputs():
+    from jupyter_sigplot.sigplot import _local_name_for_file
+    cases = [
+        # input                     # expected output
+        ('/data/foo.tmp',           'foo.tmp'),
+        ('../dat/foo.tmp',          'foo.tmp'),
+        ('../foo.tmp',              'foo.tmp'),
+        ('data/../../foo.tmp',      'foo.tmp'),
+    ]
+    local_dirs = ['.', 'data', 'files/data', '/path/to/data', ]
+
+    # All these should require symlinks
+    for ld in local_dirs:
+        for (input, expected) in cases:
+            actual, is_local = _local_name_for_file(input, ld)
+            assert not is_local
+            expected = os.path.join(ld, expected)
+            assert(actual == expected)
+
+
+def test_local_name_for_file_bad_inputs():
+    from jupyter_sigplot.sigplot import _local_name_for_file
+    cases = [
+        # fpath             local_dir       exception
+        ('foo.tmp',         None,           TypeError),
+        (None,              '.',            TypeError),
+        ('',                '.',            ValueError),
+    ]
+    for fpath, local_dir, etype in cases:
+        with pytest.raises(etype):
+            _local_name_for_file(fpath, local_dir)
+
+
+def test_split_inputs():
+    from jupyter_sigplot.sigplot import _split_inputs
+    cases = [
+        # input                     # expected output
+        ('',                        []),
+        ('a',                       ['a']),
+        ('a|b',                     ['a', 'b']),
+
+        ('file.tmp',                ['file.tmp']),
+        ('file.tmp|http://url/',    ['file.tmp', 'http://url/']),
+
+        ('  a ',                    ['a']),
+        ('  a |  b ',               ['a', 'b']),
+
+        ('|',                       []),
+        ('||',                      []),
+        ('a|',                      ['a']),
+        ('|a',                      ['a']),
+        ('||a|||',                  ['a']),
+        ('||a|||b|',                ['a', 'b']),
+        ('  | ||  | ',              []),
+    ]
+    for (input, expected) in cases:
+        actual = _split_inputs(input)
+        assert(actual == expected)
+
+
+@patch('jupyter_sigplot.sigplot._prepare_file_input')
+@patch('jupyter_sigplot.sigplot._prepare_http_input')
+def test_prepare_href_input(prepare_http_input_mock,
+                            prepare_file_input_mock):
+    from jupyter_sigplot.sigplot import _prepare_href_input
+
+    # The value is unimportant for this test
+    local_dir = None
+
+    def reset():
+        for m in (prepare_file_input_mock,
+                  prepare_http_input_mock,
+                  ):
+            m.reset_mock()
+
+    # empty input
+    _prepare_href_input('', local_dir)
+    prepare_http_input_mock.assert_not_called()
+    prepare_file_input_mock.assert_not_called()
+
+    # file only
+    reset()
+    _prepare_href_input('foo.tmp', local_dir)
+    prepare_http_input_mock.assert_not_called()
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+
+    # url only
+    reset()
+    _prepare_href_input('https://www.example.com/bar.tmp', local_dir)
+    prepare_http_input_mock.assert_called_once_with(
+        'https://www.example.com/bar.tmp',
+        local_dir)
+    prepare_file_input_mock.assert_not_called()
+
+    # file and url
+    reset()
+    _prepare_href_input('foo.tmp|https://www.example.com/bar.tmp', local_dir)
+    prepare_http_input_mock.assert_called_once_with(
+        'https://www.example.com/bar.tmp',
+        local_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+
+    # order independence
+    reset()
+    _prepare_href_input('https://www.example.com/bar.tmp|foo.tmp', local_dir)
+    prepare_http_input_mock.assert_called_once_with(
+        'https://www.example.com/bar.tmp',
+        local_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+
+    # multiple of each
+    reset()
+    _prepare_href_input(
+        'https://www.example.com/bar.tmp| foo.tmp|baz.tmp|http://www.example.com/quux.tmp  | xyzzy.prm',  # noqa: E501
+        local_dir)
+    assert prepare_http_input_mock.call_count == 2
+    assert prepare_file_input_mock.call_count == 3

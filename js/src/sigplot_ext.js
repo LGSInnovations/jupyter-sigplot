@@ -1,3 +1,5 @@
+'use strict';
+
 var widgets = require('@jupyter-widgets/base');
 var sigplot= require("sigplot")
 
@@ -39,7 +41,7 @@ var SigPlotView = widgets.DOMWidgetView.extend({
           self.$el.css('height', '350px');
           self.plot.checkresize()
         }, 0);
-        
+
         var i;
         for (i =0; i<this.model.get('oldArrays').length; i++){
             this.array_obj = this.model.get('oldArrays')[i];
@@ -65,10 +67,10 @@ var SigPlotView = widgets.DOMWidgetView.extend({
       if (old_options === new_options) {
         return;
       } else {
-        this.plot.change_settings(new_options);   
+        this.plot.change_settings(new_options);
       }
     },
-    
+
     /**
      * Handles plotting both 1-D (xplot) and 2-D arrays (xraster)
      */
@@ -100,7 +102,9 @@ var SigPlotView = widgets.DOMWidgetView.extend({
       } else {
         var url = href_obj.filename;
         if (!url.startsWith("http")) {
-          url= window.location.href.split("/").slice(0, -2).join("/")+"/files/"+ url;
+          // Server-side widget gave us a name like data/foo.tmp;
+          // Jupyter will serve this for us at the `files` route
+          url = window.location.origin + "/files/" + url;
         }
         this.plot.overlay_href(
           url,
