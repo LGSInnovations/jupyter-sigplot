@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import sys
 
 import pytest
 from mock import patch
@@ -9,6 +10,7 @@ from IPython.testing.globalipapp import get_ipython
 ip = get_ipython()
 
 from jupyter_sigplot.sigplot import SigPlot  # noqa: E402
+from testutil import EnvironmentVariable
 
 
 def test_empty_object():
@@ -387,42 +389,42 @@ def test_unravel_path():
 
     # Go all the way through the environment instead of a mock to be sure the
     # whole thing works end to end
-    #
-    # TODO (sat 2018-11-16): Probably better to do this environment work
-    # thing using a context manager ("with")
-    env_key = 'TEST_UNRAVEL'
-    old_env_val = os.environ.get(env_key)
-    env_val = str(time.time())
-    os.environ[env_key] = env_val
+    with EnvironmentVariable('TEST_UNRAVEL', str(time.time())) as envvar:
+        env_key = envvar.key
+        env_val = envvar.new_value
 
-    cases = [
-        # input                 # expected output
-        ('',                    cwd_full),
-        ('.',                   cwd_full),
-        ('./nonesuch/..',       cwd_full),
+        cases = [
+            # input                 # expected output
+            ('',                    cwd_full),
+            ('.',                   cwd_full),
+            ('./nonesuch/..',       cwd_full),
 
-        ('~',                   tilde_full),
+            ('~',                   tilde_full),
 
-        # Leading / because bare words are unraveled relative to cwd
-        ('/$%s' % env_key,      os.path.join('/', env_val)),
+            # Leading / because bare words are unraveled relative to cwd
+            ('/$%s' % env_key,      os.path.join('/', env_val)),
 
-        ('~/$%s' % env_key,     os.path.join(tilde_full, env_val)),
+            ('~/$%s' % env_key,     os.path.join(tilde_full, env_val)),
 
-        ('/',                   '/'),
-        ('/../',                '/'),
-        ('/tmp',                '/tmp'),
-        ('/tmp/foo/..',         '/tmp'),
+            ('/',                   '/'),
+            ('/../',                '/'),
+        ]
 
-    ]
-    try:
+        platform_specific_cases = [
+            ('/tmp',                '/tmp'),
+            ('/tmp/foo/..',         '/tmp'),
+        ]
+
+        for (input, expected) in platform_specific_cases:
+            # macOS-compatibility
+            if sys.platform.startswith('darwin'):
+                cases.append((input, "/private" + expected))
+            else:
+                cases.append((input, expected))
+
         for (input, expected) in cases:
             actual = _unravel_path(input)
             assert(actual == expected)
-    finally:
-        if old_env_val is None:
-            del os.environ[env_key]
-        else:
-            os.environ[env_key] = old_env_val
 
 
 @patch('os.mkdir')
