@@ -132,6 +132,9 @@ class NPM(Command):
         update_package_data(self.distribution)
 
 
+with open('requirements.txt') as requirements_file:
+    requirements = map(str.strip, requirements_file.readlines())
+
 setup_args = {
     'name': 'jupyter_sigplot',
     'version': _version.__version__,
@@ -146,13 +149,7 @@ setup_args = {
             'jupyter_sigplot/static/index.js.map',
         ],
     ), ('etc/jupyter/nbconfig/notebook.d/', ['jupyter_sigplot.json'])],
-    'install_requires': [
-        'ipython==5.7.0',
-        'notebook==5.4.1',
-        'ipywidgets>=7.0.0',
-        'numpy',
-        'requests',
-    ],
+    'install_requires': requirements,
     'packages': find_packages(),
     'zip_safe': False,
     'cmdclass': {
