@@ -3,5 +3,6 @@ flake8
 mock
 pytest
 pytest-runner
+selenium
 tox
 tox-travis
