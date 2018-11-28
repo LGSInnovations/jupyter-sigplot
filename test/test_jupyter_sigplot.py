@@ -11,7 +11,7 @@ from IPython.testing.globalipapp import get_ipython
 ip = get_ipython()
 
 from jupyter_sigplot.sigplot import SigPlot  # noqa: E402
-from .testutil import EnvironmentVariable  # noqa: E402
+from testutil import EnvironmentVariable  # noqa: E402
 
 
 def test_empty_object():

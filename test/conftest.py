@@ -16,7 +16,7 @@ except ImportError:
     from urlparse import urljoin
 
 from selenium.webdriver import Firefox, Remote, Chrome
-from .utils import Notebook
+from utils import Notebook
 
 pjoin = os.path.join
 
