@@ -19,6 +19,7 @@ install:
   - export PATH=$PATH:/usr/local/bin/
   - pip install tox tox-travis
 script:
+  - export MOZ_HEADLESS=1
   - tox
 notifications:
   email: false
