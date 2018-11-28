@@ -13,6 +13,6 @@ matrix:
 install:
   - pip install tox tox-travis
 script:
-  - tox
+  - JUPYTER_TEST_BROWSER=chrome tox
 notifications:
   email: false
