@@ -105,10 +105,10 @@ def make_sauce_driver():
 def selenium_driver():
     if os.environ.get('SAUCE_USERNAME'):
         driver = make_sauce_driver()
-    # elif os.environ.get('JUPYTER_TEST_BROWSER') == 'chrome':
-    driver = Chrome()
-    # else:
-        # driver = Firefox()
+    elif os.environ.get('JUPYTER_TEST_BROWSER') == 'chrome':
+        driver = Chrome()
+    else:
+        driver = Firefox()
 
     yield driver
 
