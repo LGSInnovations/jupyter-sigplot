@@ -85,13 +85,13 @@ class SigPlot(widgets.DOMWidget):
             self.oldArrays = self.arrays
 
     @register_line_cell_magic
-    def overlay_array(self, data):
+    def overlay_array(self, data, header):
         if not isinstance(data, (list, tuple, np.ndarray)):
             raise TypeError(
                 "``data`` can only be Union[List, Tuple, np.ndarray]"
             )
 
-        self.inputs.append(data)
+        self.inputs.append((data, header))
 
     def show_href(self, fpath, layer_type):  # noqa: C901
         """
