@@ -164,7 +164,7 @@ class SigPlot(widgets.DOMWidget):
                     # function so we can test it better. At that point, we may
                     # also be able to specify it as the serializer for the
                     # traitlet via the `to_json` keyword argument
-                    data = arg
+                    data, header = arg
                     if layer_type == "2D":
                         data = np.asarray(data)
                         if len(data.shape) != 2 and subsize is None:
@@ -186,10 +186,10 @@ class SigPlot(widgets.DOMWidget):
                                 " to be a 2-D array or provide a valid subsize"
                             )
                     else:
-                        if isinstance(arg, np.ndarray):
+                        if isinstance(data, np.ndarray):
                             data = data.tolist()
                     self.show_array(
-                        data, layer_type=layer_type, subsize=subsize)
+                        data, header, layer_type=layer_type, subsize=subsize)
 
                 else:
                     # All href arguments are already separated and prepared
