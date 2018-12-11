@@ -63,8 +63,7 @@ class SigPlot(widgets.DOMWidget):
     def change_settings(self, **kwargs):
         self.options.update(kwargs)
 
-    def show_array(self, data, layer_type="1D", subsize=None):
-        overrides = {}
+    def show_array(self, data, overrides = {}, layer_type="1D", subsize=None):
         if layer_type == "2D":
             # subsize is *required* if it's 2-D
             if subsize is None and isinstance(data, (list, tuple)):
