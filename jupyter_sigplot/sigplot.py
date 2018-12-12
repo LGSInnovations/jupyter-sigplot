@@ -158,45 +158,16 @@ class SigPlot(widgets.DOMWidget):
     def plot(self, layer_type='1D', subsize=None):
         try:
             display(self)
-            for arg in self.inputs:
-                if isinstance(arg, (tuple, list, np.ndarray)):
-                    # TODO (sat 2018-11-08): I think this needs to move into a
-                    # function so we can test it better. At that point, we may
-                    # also be able to specify it as the serializer for the
-                    # traitlet via the `to_json` keyword argument
-                    data, header = arg
-                    if layer_type == "2D":
-                        data = np.asarray(data)
-                        if len(data.shape) != 2 and subsize is None:
-                            raise ValueError(
-                                "For layer_type 2D: data passed in needs"
-                                " to be a 2-D array or ``subsize`` "
-                                "must be provided"
-                            )
-                        elif len(data.shape) == 2 and subsize is None:
-                            subsize = data.shape[-1]
-                            data = data.flatten().tolist()
-                        elif len(data.shape) == 2 and subsize is not None:
-                            data = data.flatten().tolist()
-                        elif len(data.shape) == 1 and subsize is not None:
-                            data = arg
-                        else:
-                            raise ValueError(
-                                "For layer_type 2D: data passed in needs"
-                                " to be a 2-D array or provide a valid subsize"
-                            )
-                    else:
-                        if isinstance(data, np.ndarray):
-                            data = data.tolist()
-                    self.show_array(
-                        data, header, layer_type=layer_type, subsize=subsize)
-
+            for input in self.inputs:
+                if isinstance(input, (tuple, list, np.ndarray)):
+                    array_obj = _prepare_array_input(input, layer_type, subsize)
+                    self.show_array(*array_obj)
                 else:
                     # All href arguments are already separated and prepared
                     # by overlay_href / overlay_file (the only functions that
                     # add hrefs to self.inputs)
                     self._show_href_internal({
-                        "filename": arg,
+                        "filename": input,
                         # TODO (sat 2018-11-09): I think we should specify
                         # layer type in overlay_*, allowing each resource to
                         # have its own layer type. Need to reason about
@@ -215,6 +186,42 @@ class SigPlot(widgets.DOMWidget):
                 "``path`` must be a string or ``Path`` (Python 3) type"
             )
         self.overlay_href(path)
+
+
+
+def _prepare_array_input(input, layer_type, subsize):
+    # TODO (sat 2018-11-08): I think this needs to move into a
+    # function so we can test it better. At that point, we may
+    # also be able to specify it as the serializer for the
+    # traitlet via the `to_json` keyword argument
+    # TODO (ddw 2018-12-10): Do I need to check the number of
+    # items in input?
+    data, header = input
+    if layer_type == "2D":
+        data = np.asarray(data)
+        if len(data.shape) != 2 and subsize is None:
+            raise ValueError(
+                "For layer_type 2D: data passed in needs"
+                " to be a 2-D array or ``subsize`` "
+                "must be provided"
+            )
+        elif len(data.shape) == 2 and subsize is None:
+            subsize = data.shape[-1]
+            data = data.flatten().tolist()
+        elif len(data.shape) == 2 and subsize is not None:
+            data = data.flatten().tolist()
+        #elif len(data.shape) == 1 and subsize is not None:
+        #    data = arg
+        else:
+            raise ValueError(
+                "For layer_type 2D: data passed in needs"
+                " to be a 2-D array or provide a valid subsize"
+            )
+    else:
+        if isinstance(data, np.ndarray):
+            data = data.tolist()
+    array_obj = (data, header, layer_type, subsize)
+    return array_obj
 
 
 def _require_dir(d):
