@@ -1,0 +1,4 @@
+WAVEFORM,pulse2,sd,10000,pulse,,,,-5000,1,
+xpl pulse2|pulse
+headermod pulse2 xd=3
+xpl pulse2|pulse
