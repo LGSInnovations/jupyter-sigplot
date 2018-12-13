@@ -63,7 +63,7 @@ class SigPlot(widgets.DOMWidget):
     def change_settings(self, **kwargs):
         self.options.update(kwargs)
 
-    def show_array(self, data, overrides = {}, layer_type="1D", subsize=None):
+    def show_array(self, data, overrides={}, layer_type="1D", subsize=None):
         if layer_type == "2D":
             # subsize is *required* if it's 2-D
             if subsize is None and isinstance(data, (list, tuple)):
@@ -85,7 +85,7 @@ class SigPlot(widgets.DOMWidget):
             self.oldArrays = self.arrays
 
     @register_line_cell_magic
-    def overlay_array(self, data, header):
+    def overlay_array(self, data, header={}):
         if not isinstance(data, (list, tuple, np.ndarray)):
             raise TypeError(
                 "``data`` can only be Union[List, Tuple, np.ndarray]"
@@ -160,7 +160,8 @@ class SigPlot(widgets.DOMWidget):
             display(self)
             for input in self.inputs:
                 if isinstance(input, (tuple, list, np.ndarray)):
-                    array_obj = _prepare_array_input(input, layer_type, subsize)
+                    array_obj = _prepare_array_input(input,
+                                                     layer_type, subsize)
                     self.show_array(*array_obj)
                 else:
                     # All href arguments are already separated and prepared
@@ -188,7 +189,6 @@ class SigPlot(widgets.DOMWidget):
         self.overlay_href(path)
 
 
-
 def _prepare_array_input(input, layer_type, subsize):
     # TODO (sat 2018-11-08): I think this needs to move into a
     # function so we can test it better. At that point, we may
@@ -210,8 +210,8 @@ def _prepare_array_input(input, layer_type, subsize):
             data = data.flatten().tolist()
         elif len(data.shape) == 2 and subsize is not None:
             data = data.flatten().tolist()
-        #elif len(data.shape) == 1 and subsize is not None:
-        #    data = arg
+        elif len(data.shape) == 1 and subsize is not None:
+            data = data
         else:
             raise ValueError(
                 "For layer_type 2D: data passed in needs"
