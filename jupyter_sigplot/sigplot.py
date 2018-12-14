@@ -1,7 +1,12 @@
 #!/usr/bin/env python
-from __future__ import absolute_import, print_function
+from __future__ import (
+    absolute_import,
+    print_function,
+    unicode_literals,
+)
 import errno
 import os
+import sys
 
 import numpy as np
 
@@ -20,6 +25,13 @@ from IPython.display import (
     display,
     clear_output,
 )
+
+
+py3k = sys.version_info[0] == 3
+if py3k:
+    StringType = (str, bytes)
+else:
+    StringType = (basestring, )
 
 
 class SigPlot(widgets.DOMWidget):
@@ -54,7 +66,7 @@ class SigPlot(widgets.DOMWidget):
         # self.data_dir to the notebook server's cwd/root and be good to go.
         self.data_dir = ''
         for arg in args:
-            if isinstance(arg, str):
+            if isinstance(arg, StringType):
                 self.overlay_href(arg)
             else:
                 self.inputs.append(arg)
@@ -211,7 +223,7 @@ class SigPlot(widgets.DOMWidget):
 
     @register_line_cell_magic
     def overlay_file(self, path):
-        if not isinstance(path, str):
+        if not isinstance(path, StringType):
             raise TypeError(
                 "``path`` must be a string or ``Path`` (Python 3) type"
             )
@@ -242,11 +254,11 @@ def _local_name_for_href(url, local_dir):
     # This function has no side effects, unlike its primary caller,
     # _prepare_http_input . The goal is to make testing easier.
 
-    if not isinstance(url, str):
+    if not isinstance(url, StringType):
         raise TypeError("url must be of type str (%r has type %s)" %
                         (url, type(url)))
 
-    if not isinstance(local_dir, str):
+    if not isinstance(local_dir, StringType):
         raise TypeError("local_dir must be of type str (%r has type %s)" %
                         (local_dir, type(local_dir)))
 
@@ -303,11 +315,11 @@ def _local_name_for_file(fpath, local_dir):
 
     .. note:: Different <fname> values may map to the same local path
     """
-    if not isinstance(fpath, str):
+    if not isinstance(fpath, StringType):
         raise TypeError("fpath must be of type str (%r has type %s)" %
                         (fpath, type(fpath)))
 
-    if not isinstance(local_dir, str):
+    if not isinstance(local_dir, StringType):
         raise TypeError("local_dir must be of type str (%r has type %s)" %
                         (local_dir, type(local_dir)))
 
