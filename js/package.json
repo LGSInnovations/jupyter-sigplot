@@ -1,6 +1,6 @@
 {
   "name": "jupyter_sigplot",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Sigplot for Jupyter Notebooks",
   "author": "LGS Innovations",
   "main": "src/index.js",
