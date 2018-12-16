@@ -15,7 +15,7 @@ jupyter-sigplot
 .. _Travis: https://travis-ci.org/LGSInnovations/jupyter-sigplot
 
 .. |Binder| image:: https://mybinder.org/badge.svg
-.. _Binder: https://mybinder.org/v2/gh/LGSInnovations/jupyter-sigplot/0.1.2?filepath=example%2FJupyterSigplot.ipynb
+.. _Binder: https://mybinder.org/v2/gh/LGSInnovations/jupyter-sigplot/master?filepath=example%2FJupyterSigplot.ipynb
 
 A Custom Jupyter Widget Library for the SigPlot plotting library
 
