@@ -31,7 +31,8 @@ class EnvironmentVariable(object):
     def __exit__(self, *args):
         """Sets the environment variable back to the way it was before.
         """
-        if self.old_value:
+        # Check against None explicitly so we restore empty strings too
+        if self.old_value is not None:
             os.environ[self.key] = self.old_value
         else:
             del os.environ[self.key]
