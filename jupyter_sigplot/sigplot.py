@@ -73,7 +73,10 @@ class SigPlot(widgets.DOMWidget):
         super(SigPlot, self).__init__(**kwargs)
 
     def change_settings(self, **kwargs):
-        self.options.update(kwargs)
+        new_options = {}
+        new_options.update(self.options)
+        new_options.update(kwargs)
+        self.options = new_options
 
     def show_array(self, data, layer_type="1D", subsize=None):
         overrides = {}
