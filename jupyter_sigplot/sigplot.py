@@ -27,8 +27,8 @@ from IPython.display import (
 )
 
 
-py3k = sys.version_info[0] == 3
-if py3k:
+_py3k = sys.version_info[0] == 3
+if _py3k:
     StringType = (str, bytes)
 else:
     StringType = (basestring, )
@@ -51,12 +51,14 @@ class SigPlot(widgets.DOMWidget):
     oldHrefs = List().tag(sync=True)
     imageOutput = Unicode("img").tag(sync=True)
     dimension = 1
+    # Sequence of callables used by _prepare_file_input to resolve relative
+    # pathnames
+    path_resolvers = []
 
     def __init__(self, *args, **kwargs):
         self.inputs = []
         self.hrefs = []
         self.arrays = []
-        self.options = kwargs
         # Where to look for data, and where to cache/symlink remote resources
         # that the server or client cannot access directly.
         #
@@ -64,7 +66,19 @@ class SigPlot(widgets.DOMWidget):
         # effective root of the notebook server, not just this kernel. See
         # Github issue #17. I expect that we'll be able to just set
         # self.data_dir to the notebook server's cwd/root and be good to go.
-        self.data_dir = ''
+        self.data_dir = kwargs.pop('data_dir', '')
+
+        if 'path_resolvers' in kwargs:
+            # Don't use pop()+default because we don't want to override class-
+            # level values when not specified here, and we do want to allow
+            # specifying None to remove any resolvers.
+            #
+            # Note that instance-level resolvers will override class-level
+            # resolvers per Python semantics.
+            self.path_resolvers = kwargs.pop('path_resolvers')
+
+        # Whatever's left is meant for the client half of the widget
+        self.options = kwargs
         for arg in args:
             if isinstance(arg, StringType):
                 self.overlay_href(arg)
@@ -132,7 +146,9 @@ class SigPlot(widgets.DOMWidget):
         >>> display(plot)
         >>> plot.overlay_href('foo.tmp', layer_type='2D')
         """
-        for pi in _prepare_href_input(fpath, self.data_dir):
+        for pi in _prepare_href_input(fpath,
+                                      self.data_dir,
+                                      self.path_resolvers):
             obj = {
                 "filename": pi,
                 "layerType": layer_type,
@@ -164,7 +180,9 @@ class SigPlot(widgets.DOMWidget):
         # only add to self.inputs if we're not yet rendered, and otherwise
         # jump right to _show_href_internal; or clear self.inputs after we've
         # consumed it, add to self.inputs here, and trigger self.plot()
-        prepared_paths = _prepare_href_input(paths, self.data_dir)
+        prepared_paths = _prepare_href_input(paths,
+                                             self.data_dir,
+                                             self.path_resolvers)
         self.inputs.extend(prepared_paths)
 
     def display_as_png(self):
@@ -301,23 +319,35 @@ def _prepare_http_input(url, local_dir):
     return local_fname
 
 
-def _unravel_path(path):
+def _unravel_path(path, resolvers=None):
+    """
+    Expand user directories and environment variables in <path>, then run
+    through callables in <resolvers>. Does NOT call realpath / abspath unless
+    that happens to be in <resolvers>.
+    """
     import os.path as p
-    return p.realpath(p.expanduser(p.expandvars(path)))
+    unraveled = p.expanduser(p.expandvars(path))
+    if resolvers:
+        for f in resolvers:
+            unraveled = f(unraveled)
+    return unraveled
 
 
 def _local_name_for_file(fpath, local_dir):
     """
-    Generate a name for the given a file path under <local_dir>
+    Generate a name for the given a file path under <local_dir> . Expects
+    arguments to already be unraveled.
 
     :return: tuple (path, is_local) where
              <path> is a path starting at <local_dir> suitable for storing
-                    a link to, or the contents of, <fname>
+                    a link to, or the contents of, <fpath>
              <is_local> is a bool, true iff <fpath> is already a
                     descendant of <local_dir>
 
     .. note:: Different <fname> values may map to the same local path
     """
+    import os.path as p
+
     if not isinstance(fpath, StringType):
         raise TypeError("fpath must be of type str (%r has type %s)" %
                         (fpath, type(fpath)))
@@ -329,34 +359,35 @@ def _local_name_for_file(fpath, local_dir):
     if not fpath:
         raise ValueError("Path %r is not a valid filename" % fpath)
 
-    # TODO (sat 2018-11-07): Consider adding an optional <resolver> callable
-    # to transform <fname> into a full path. Could implement the current
-    # _unravel_path logic, but could also implement a domain-specific search
-    # path for unadorned filenames, etc.
-    fpath = _unravel_path(fpath)
-    abs_local_dir = _unravel_path(local_dir)
+    abs_fpath = p.realpath(fpath)
+    abs_local_dir = p.realpath(local_dir)
 
     # A bit clunky but works okay for now
-    if fpath.startswith(abs_local_dir):
+    if abs_fpath.startswith(abs_local_dir):
         is_local = True
-        local_relative_path = fpath[len(abs_local_dir + os.path.sep):]
+        local_relative_path = abs_fpath[len(abs_local_dir + os.path.sep):]
     else:
         is_local = False
-        local_relative_path = os.path.basename(fpath)
+        local_relative_path = os.path.basename(abs_fpath)
 
     return (os.path.join(local_dir, local_relative_path), is_local)
 
 
-def _prepare_file_input(orig_fname, local_dir):
+def _prepare_file_input(orig_fname, local_dir, resolvers=None):
     """
     Given an arbitrary filename, determine whether that file is a child of
     <local_dir>. If not, create a symlink under <local_dir> that points to the
     original file, so the Jupyter server can resolve it.
 
+    :param resolvers: sequence of callables to be applied, in order, to
+    <orig_fname>. Could be used to normalize case, look up bare paths in
+    system- specific search paths, etc. <orig_fname> will have environment
+    variables and user directories expanded before it is given to the first
+    resolver.
+
     :return: A filename in the local filesystem, under <local_dir>
     """
-    import os.path as p
-    input_path = _unravel_path(orig_fname)
+    input_path = _unravel_path(orig_fname, resolvers)
 
     # TODO (sat 2018-11-07): Handle errors more thoroughly
     # * unable to make local path
@@ -368,13 +399,11 @@ def _prepare_file_input(orig_fname, local_dir):
     local_fname, is_local = _local_name_for_file(input_path, local_dir)
     if not is_local:
         try:
-            # If we link the unraveled path, then relative names like
-            # ../foo.tmp will become obscured. So we prefer to keep the target
-            # as raveled as possible. But we still need to make sure that we
-            # handle user specifications like ~someone and environment
-            # variables.
-            linkpath = p.expanduser(p.expandvars(orig_fname))
-            os.symlink(linkpath, local_fname)
+            # Note that _unravel_path keeps relative names like ../foo.tmp
+            # will as is, only applying user specifications like ~someone,
+            # environment variables, and any explicit resolvers. This is
+            # intended to make links as human-comprehensible as possible.
+            os.symlink(input_path, local_fname)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -398,7 +427,7 @@ def _split_inputs(orig_inputs):
     return inputs
 
 
-def _prepare_href_input(orig_inputs, local_dir):
+def _prepare_href_input(orig_inputs, local_dir, resolvers=None):
     """
     Given an input specification containing one or more filesystem paths and
     URIs separated by '|', prepare each one according to its type.
@@ -411,7 +440,11 @@ def _prepare_href_input(orig_inputs, local_dir):
         if oi.startswith("http"):
             pi = _prepare_http_input(oi, local_dir)
         else:
-            pi = _prepare_file_input(oi, local_dir)
+            # TODO (sat 2019-01-08): This `resolvers` argument  feels like a
+            # bad factoring, since only one branch uses it; may want to move
+            # _prepare_href_input to a class member or else replace with a
+            # split+dispatch idiom at the point of call.
+            pi = _prepare_file_input(oi, local_dir, resolvers)
         prepared.append(pi)
 
     return prepared
