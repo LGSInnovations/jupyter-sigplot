@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 
 import pytest
 from mock import patch
@@ -380,11 +379,10 @@ def test_overlay_file_bad_type():
         plot.overlay_file(path)
 
 
-def test_unravel_path():
+def test_unravel_path_no_resolvers():
     import time
     from jupyter_sigplot.sigplot import _unravel_path
 
-    cwd_full = os.getcwd()
     tilde_full = os.path.expanduser('~')
 
     # Go all the way through the environment instead of a mock to be sure the
@@ -395,36 +393,94 @@ def test_unravel_path():
 
         cases = [
             # input                 # expected output
-            ('',                    cwd_full),
-            ('.',                   cwd_full),
-            ('./nonesuch/..',       cwd_full),
+            ('',                    ''),
+            ('.',                   '.'),
 
             ('~',                   tilde_full),
 
-            # Leading / because bare words are unraveled relative to cwd
+            ('$%s' % env_key,       env_val),
             ('/$%s' % env_key,      os.path.join('/', env_val)),
 
             ('~/$%s' % env_key,     os.path.join(tilde_full, env_val)),
-
-            ('/',                   '/'),
-            ('/../',                '/'),
         ]
-
-        platform_specific_cases = [
-            ('/tmp',                '/tmp'),
-            ('/tmp/foo/..',         '/tmp'),
-        ]
-
-        for (input, expected) in platform_specific_cases:
-            # macOS-compatibility
-            if sys.platform.startswith('darwin'):
-                cases.append((input, "/private" + expected))
-            else:
-                cases.append((input, expected))
 
         for (input, expected) in cases:
             actual = _unravel_path(input)
             assert(actual == expected)
+
+
+@patch('os.path.expanduser')  # noqa: C901
+@patch('os.path.expandvars')
+def test_unravel_path_resolvers(expandvars_mock, expanduser_mock):
+    # This test isolates just the behavior of the `resolvers` argument to
+    # _unravel_path. The set of test cases grows rather quickly if you cross
+    # resolver equivalence classes with input equivalence classes, so we'll
+    # just trust that testing each axis independently is sufficient.
+    from jupyter_sigplot.sigplot import _unravel_path
+
+    # Set up scaffolding to record the names of functions, in order, as they
+    # are called.
+    call_list = []
+
+    def reset():
+        call_list[:] = []
+
+    # Note that all functions take a single argument
+    def make_recorder(name):
+        def f(a):
+            call_list.append(name)
+            return a
+        return f
+
+    def recordit(f):
+        r = make_recorder(f.__name__)
+
+        def wrapped(a):
+            r(a)
+            return f(a)
+        wrapped.__name__ = f.__name__
+        return wrapped
+
+    expandvars_mock.side_effect = make_recorder('expandvars')
+    expanduser_mock.side_effect = make_recorder('expanduser')
+
+    @recordit
+    def one(p): return p + '1'
+
+    @recordit
+    def two(p): return p + '2'
+
+    @recordit
+    def three(p): return p + '3'
+
+    for resolvers, expected in [
+            ([],                     ''),
+            ([one],                  '1'),
+            ([one, two],             '12'),
+            ([two, one],             '21'),
+            ([one, two, three],      '123'),
+            ([three, two, one, one], '3211'),
+    ]:
+        reset()
+        expected_names = ['expandvars', 'expanduser'] + \
+                         [f.__name__ for f in resolvers]
+        actual = _unravel_path('', resolvers)
+        # Ensure that resolvers are called in the right sequence relative to
+        # one another and relative to expandvars/expanduser
+        assert(call_list == expected_names)
+        # Ensure that resolvers are composed (output of rN is input of rN+1)
+        assert(actual == expected)
+
+    # Check that we get an error when resolvers arg is not as expected
+    for resolvers in [
+        3,
+        # 0, Equivalent to resolvers=None, i.e., no resolvers
+        'a string',
+        [3, 0],
+        ['a string'],
+    ]:
+        with pytest.raises(TypeError):
+            _unravel_path('foo.tmp', resolvers)
 
 
 @patch('os.mkdir')
@@ -538,6 +594,78 @@ def test_local_name_for_file_bad_inputs():
             _local_name_for_file(fpath, local_dir)
 
 
+@patch('jupyter_sigplot.sigplot._unravel_path')
+def test_prepare_file_input_resolver(unravel_path_mock):
+    """
+    Ensure that resolvers get passed through from _prepare_file_input to
+    _unravel_path
+    """
+    from jupyter_sigplot.sigplot import _prepare_file_input
+
+    # Needed to avoid a type error internal to _prepare_file_input; value is
+    # unimportant, but type matters
+    unravel_path_mock.return_value = 'bar.tmp'
+
+    def one(f): pass
+
+    fname = 'foo.tmp'
+    for resolvers in [
+        [],
+        [one],
+    ]:
+        unravel_path_mock.reset_mock()
+        _prepare_file_input(fname, '', resolvers)
+        unravel_path_mock.assert_called_once_with(fname, resolvers)
+
+
+def test_instance_level_resolver():
+    from jupyter_sigplot.sigplot import SigPlot
+
+    def to_foo(s):
+        return 'foo'
+
+    # If a single path resolver makes it all the way through the prepare step,
+    # we assume that other tests ensure more complicated cases do, too.
+
+    # Resolver specified in constructor
+    p = SigPlot(path_resolvers=[to_foo])
+    p.overlay_file('baz')
+    assert(p.inputs == ['foo'])
+
+    p = SigPlot('bar', path_resolvers=[to_foo])
+    assert(p.path_resolvers == [to_foo])
+    assert(p.inputs == ['foo'])
+
+    p = SigPlot('bar|baz', path_resolvers=[to_foo])
+    assert(p.inputs == ['foo', 'foo'])
+
+    # Resolver specified after construction
+    p = SigPlot()
+    p.path_resolvers = [to_foo]
+    p.overlay_href('quux')
+    assert(p.path_resolvers == [to_foo])
+    assert(p.inputs == ['foo'])
+
+
+def test_class_level_resolver():
+    from jupyter_sigplot.sigplot import SigPlot
+
+    def to_foo(s):
+        return 'foo'
+
+    SigPlot.path_resolvers = [to_foo]
+
+    # Resolver applied in constructor
+    p = SigPlot('bar.tmp')
+    assert(p.path_resolvers == [to_foo])
+    assert(p.inputs == ['foo'])
+
+    # Resolver applied post constructor
+    p = SigPlot()
+    p.overlay_href('baz|quux.mat')
+    assert(p.inputs == ['foo', 'foo'])
+
+
 def test_split_inputs():
     from jupyter_sigplot.sigplot import _split_inputs
     cases = [
@@ -589,7 +717,7 @@ def test_prepare_href_input(prepare_http_input_mock,
     reset()
     _prepare_href_input('foo.tmp', local_dir)
     prepare_http_input_mock.assert_not_called()
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
 
     # url only
     reset()
@@ -605,7 +733,7 @@ def test_prepare_href_input(prepare_http_input_mock,
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
         local_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
 
     # order independence
     reset()
@@ -613,7 +741,7 @@ def test_prepare_href_input(prepare_http_input_mock,
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
         local_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
 
     # multiple of each
     reset()
