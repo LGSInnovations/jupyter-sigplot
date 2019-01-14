@@ -27,8 +27,8 @@ from IPython.display import (
 )
 
 
-py3k = sys.version_info[0] == 3
-if py3k:
+_py3k = sys.version_info[0] == 3
+if _py3k:
     StringType = (str, bytes)
 else:
     StringType = (basestring, )
