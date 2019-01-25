@@ -160,16 +160,15 @@ def test_show_href_file_absolute_already_in_cwd():
 def test_show_href_file_absolute_not_already_there(symlink_mock, mkdir_mock):
     path = "~/foo.tmp"
     plot = SigPlot()
-
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0][0] == '.'
+    assert mkdir_mock.call_args[0][0] == os.getcwd()
 
     assert symlink_mock.call_count == 1
 
     local_path = 'foo.tmp'
     fpath = os.path.expanduser(os.path.expandvars(path))
-    assert symlink_mock.call_args[0] == (fpath, local_path)
+    assert symlink_mock.call_args[0] == (fpath, os.path.abspath(local_path))
 
 
 @patch('os.mkdir')
@@ -180,13 +179,13 @@ def test_show_href_file_relative(symlink_mock, mkdir_mock):
 
     plot.show_href(path, '1D')
     assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0][0] == '.'
+    assert mkdir_mock.call_args[0][0] == os.getcwd()
 
     assert symlink_mock.call_count == 1
 
     local_path = 'foo.tmp'
     fpath = os.path.expanduser(os.path.expandvars(path))
-    assert symlink_mock.call_args[0] == (fpath, local_path)
+    assert symlink_mock.call_args[0] == (fpath, os.path.abspath(local_path))
 
 
 def test_overlay_href_non_empty_file():
@@ -614,7 +613,7 @@ def test_prepare_file_input_resolver(unravel_path_mock):
         [one],
     ]:
         unravel_path_mock.reset_mock()
-        _prepare_file_input(fname, '', resolvers)
+        _prepare_file_input(fname, '', '', resolvers)
         unravel_path_mock.assert_called_once_with(fname, resolvers)
 
 
@@ -701,6 +700,7 @@ def test_prepare_href_input(prepare_http_input_mock,
 
     # The value is unimportant for this test
     local_dir = None
+    notebook_dir = None
 
     def reset():
         for m in (prepare_file_input_mock,
@@ -709,44 +709,44 @@ def test_prepare_href_input(prepare_http_input_mock,
             m.reset_mock()
 
     # empty input
-    _prepare_href_input('', local_dir)
+    _prepare_href_input('', local_dir, notebook_dir)
     prepare_http_input_mock.assert_not_called()
     prepare_file_input_mock.assert_not_called()
 
     # file only
     reset()
-    _prepare_href_input('foo.tmp', local_dir)
+    _prepare_href_input('foo.tmp', local_dir, notebook_dir)
     prepare_http_input_mock.assert_not_called()
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
 
     # url only
     reset()
-    _prepare_href_input('https://www.example.com/bar.tmp', local_dir)
+    _prepare_href_input('https://www.example.com/bar.tmp', local_dir, notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
+        local_dir, notebook_dir)
     prepare_file_input_mock.assert_not_called()
 
     # file and url
     reset()
-    _prepare_href_input('foo.tmp|https://www.example.com/bar.tmp', local_dir)
+    _prepare_href_input('foo.tmp|https://www.example.com/bar.tmp', local_dir, notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
+        local_dir, notebook_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
 
     # order independence
     reset()
-    _prepare_href_input('https://www.example.com/bar.tmp|foo.tmp', local_dir)
+    _prepare_href_input('https://www.example.com/bar.tmp|foo.tmp', local_dir, notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
+        local_dir, notebook_dir)
+    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
 
     # multiple of each
     reset()
     _prepare_href_input(
         'https://www.example.com/bar.tmp| foo.tmp|baz.tmp|http://www.example.com/quux.tmp  | xyzzy.prm',  # noqa: E501
-        local_dir)
+        local_dir, notebook_dir)
     assert prepare_http_input_mock.call_count == 2
     assert prepare_file_input_mock.call_count == 3
