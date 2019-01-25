@@ -717,36 +717,61 @@ def test_prepare_href_input(prepare_http_input_mock,
     reset()
     _prepare_href_input('foo.tmp', local_dir, notebook_dir)
     prepare_http_input_mock.assert_not_called()
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
+    prepare_file_input_mock.assert_called_once_with(
+        'foo.tmp',
+        local_dir,
+        notebook_dir,
+        None)
 
     # url only
     reset()
-    _prepare_href_input('https://www.example.com/bar.tmp', local_dir, notebook_dir)
+    _prepare_href_input(
+        'https://www.example.com/bar.tmp',
+        local_dir,
+        notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir, notebook_dir)
+        local_dir,
+        notebook_dir)
     prepare_file_input_mock.assert_not_called()
 
     # file and url
     reset()
-    _prepare_href_input('foo.tmp|https://www.example.com/bar.tmp', local_dir, notebook_dir)
+    _prepare_href_input(
+        'foo.tmp|https://www.example.com/bar.tmp',
+        local_dir,
+        notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir, notebook_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
+        local_dir,
+        notebook_dir)
+    prepare_file_input_mock.assert_called_once_with(
+        'foo.tmp',
+        local_dir,
+        notebook_dir,
+        None)
 
     # order independence
     reset()
-    _prepare_href_input('https://www.example.com/bar.tmp|foo.tmp', local_dir, notebook_dir)
+    _prepare_href_input(
+        'https://www.example.com/bar.tmp|foo.tmp',
+        local_dir,
+        notebook_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir, notebook_dir)
-    prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, notebook_dir, None)
+        local_dir,
+        notebook_dir)
+    prepare_file_input_mock.assert_called_once_with(
+        'foo.tmp',
+        local_dir,
+        notebook_dir,
+        None)
 
     # multiple of each
     reset()
     _prepare_href_input(
         'https://www.example.com/bar.tmp| foo.tmp|baz.tmp|http://www.example.com/quux.tmp  | xyzzy.prm',  # noqa: E501
-        local_dir, notebook_dir)
+        local_dir,
+        notebook_dir)
     assert prepare_http_input_mock.call_count == 2
     assert prepare_file_input_mock.call_count == 3

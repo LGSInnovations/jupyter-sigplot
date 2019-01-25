@@ -64,7 +64,8 @@ class SigPlot(widgets.DOMWidget):
         self.notebook_dir = os.getcwd()
         self.data_dir = kwargs.pop('data_dir', self.notebook_dir)
         if not os.path.isabs(self.data_dir):
-            # Need to store absolute path of data directory in case user os.chdir
+            # Need to store absolute path of data directory in case user
+            # uses os.chdir()
             self.data_dir = os.getcwd() + "/" + self.data_dir
 
         if 'path_resolvers' in kwargs:
@@ -408,7 +409,7 @@ def _prepare_file_input(orig_fname, local_dir, notebook_dir, resolvers=None):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-    # Because local_dir is provided as the absolute path, convert back to relative path
+    # local_dir is provided as the absolute path, convert back to relative path
     local_fname = os.path.relpath(local_fname, start=notebook_dir)
     return local_fname
 
