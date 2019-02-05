@@ -66,7 +66,7 @@ class SigPlot(widgets.DOMWidget):
         if not os.path.isabs(self.data_dir):
             # Need to store absolute path of data directory in case user
             # uses os.chdir()
-            self.data_dir = os.getcwd() + "/" + self.data_dir
+            self.data_dir = os.path.join(self.notebook_dir, self.data_dir)
 
         if 'path_resolvers' in kwargs:
             # Don't use pop()+default because we don't want to override class-
