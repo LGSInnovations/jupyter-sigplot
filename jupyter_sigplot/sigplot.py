@@ -60,12 +60,9 @@ class SigPlot(widgets.DOMWidget):
         self.hrefs = []
         self.arrays = []
         # Where to look for data, and where to cache/symlink remote resources
-        # that the server or client cannot access directly.
-        #
-        # TODO (sat 2018-11-16): This actually needs to be relative to the
-        # effective root of the notebook server, not just this kernel. See
-        # Github issue #17. I expect that we'll be able to just set
-        # self.data_dir to the notebook server's cwd/root and be good to go.
+        # that the server or client cannot access directly. Note that changing
+        # the kernel's current directory affects data_dir if it is set as a
+        # relative path.
         self.data_dir = kwargs.pop('data_dir', '')
 
         if 'path_resolvers' in kwargs:
