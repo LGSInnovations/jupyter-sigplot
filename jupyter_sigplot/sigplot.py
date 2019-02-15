@@ -61,12 +61,12 @@ class SigPlot(widgets.DOMWidget):
         self.arrays = []
         # Where to look for data, and where to cache/symlink remote resources
         # that the server or client cannot access directly.
-        self.notebook_dir = os.getcwd()
-        self.data_dir = kwargs.pop('data_dir', self.notebook_dir)
-        if not os.path.isabs(self.data_dir):
-            # Need to store absolute path of data directory in case user
-            # uses os.chdir()
-            self.data_dir = os.path.join(self.notebook_dir, self.data_dir)
+        #
+        # TODO (sat 2018-11-16): This actually needs to be relative to the
+        # effective root of the notebook server, not just this kernel. See
+        # Github issue #17. I expect that we'll be able to just set
+        # self.data_dir to the notebook server's cwd/root and be good to go.
+        self.data_dir = kwargs.pop('data_dir', '')
 
         if 'path_resolvers' in kwargs:
             # Don't use pop()+default because we don't want to override class-
@@ -148,7 +148,6 @@ class SigPlot(widgets.DOMWidget):
         """
         for pi in _prepare_href_input(fpath,
                                       self.data_dir,
-                                      self.notebook_dir,
                                       self.path_resolvers):
             obj = {
                 "filename": pi,
@@ -183,7 +182,6 @@ class SigPlot(widgets.DOMWidget):
         # consumed it, add to self.inputs here, and trigger self.plot()
         prepared_paths = _prepare_href_input(paths,
                                              self.data_dir,
-                                             self.notebook_dir,
                                              self.path_resolvers)
         self.inputs.extend(prepared_paths)
 
@@ -300,7 +298,7 @@ def _local_name_for_href(url, local_dir):
     return local_path
 
 
-def _prepare_http_input(url, local_dir, notebook_dir):
+def _prepare_http_input(url, local_dir):
     """
     Given a URI, fetch the named resource to a file in <local_dir>, to avoid
     CORS issues.
@@ -308,6 +306,7 @@ def _prepare_http_input(url, local_dir, notebook_dir):
     :return: A filename in the local filesystem, under <local_dir>
     """
     _require_dir(local_dir)
+
     local_fname = _local_name_for_href(url, local_dir)
     r = requests.get(url)
     with open(local_fname, 'wb') as f:
@@ -317,10 +316,7 @@ def _prepare_http_input(url, local_dir, notebook_dir):
     #
     # The client side of the widget will automatically look for a path
     # relative to <local_dir>
-    #
-    # (jrmims 2019-01-24): Added notebook_dir to track the notebook's directory
-    # since that is where the relative path should be based on.
-    return os.path.relpath(local_fname, start=notebook_dir)
+    return local_fname
 
 
 def _unravel_path(path, resolvers=None):
@@ -373,10 +369,11 @@ def _local_name_for_file(fpath, local_dir):
     else:
         is_local = False
         local_relative_path = os.path.basename(abs_fpath)
+
     return (os.path.join(local_dir, local_relative_path), is_local)
 
 
-def _prepare_file_input(orig_fname, local_dir, notebook_dir, resolvers=None):
+def _prepare_file_input(orig_fname, local_dir, resolvers=None):
     """
     Given an arbitrary filename, determine whether that file is a child of
     <local_dir>. If not, create a symlink under <local_dir> that points to the
@@ -391,14 +388,15 @@ def _prepare_file_input(orig_fname, local_dir, notebook_dir, resolvers=None):
     :return: A filename in the local filesystem, under <local_dir>
     """
     input_path = _unravel_path(orig_fname, resolvers)
+
     # TODO (sat 2018-11-07): Handle errors more thoroughly
     # * unable to make local path
     # * symlink already exists, to wrong target
     # * original file does not exist / has bad perms
     _require_dir(local_dir)
 
+    # TODO (sat 2018-11-07): Do the right thing if <local_dir> is absolute
     local_fname, is_local = _local_name_for_file(input_path, local_dir)
-
     if not is_local:
         try:
             # Note that _unravel_path keeps relative names like ../foo.tmp
@@ -409,8 +407,7 @@ def _prepare_file_input(orig_fname, local_dir, notebook_dir, resolvers=None):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-    # local_dir is provided as the absolute path, convert back to relative path
-    local_fname = os.path.relpath(local_fname, start=notebook_dir)
+
     return local_fname
 
 
@@ -430,7 +427,7 @@ def _split_inputs(orig_inputs):
     return inputs
 
 
-def _prepare_href_input(orig_inputs, local_dir, notebook_dir, resolvers=None):
+def _prepare_href_input(orig_inputs, local_dir, resolvers=None):
     """
     Given an input specification containing one or more filesystem paths and
     URIs separated by '|', prepare each one according to its type.
@@ -438,15 +435,16 @@ def _prepare_href_input(orig_inputs, local_dir, notebook_dir, resolvers=None):
     :return: A list of filenames in the local filesystem, under <local_dir>
     """
     prepared = []
+
     for oi in _split_inputs(orig_inputs):
         if oi.startswith("http"):
-            pi = _prepare_http_input(oi, local_dir, notebook_dir)
+            pi = _prepare_http_input(oi, local_dir)
         else:
             # TODO (sat 2019-01-08): This `resolvers` argument  feels like a
             # bad factoring, since only one branch uses it; may want to move
             # _prepare_href_input to a class member or else replace with a
             # split+dispatch idiom at the point of call.
-            pi = _prepare_file_input(oi, local_dir, notebook_dir, resolvers)
+            pi = _prepare_file_input(oi, local_dir, resolvers)
         prepared.append(pi)
 
     return prepared
