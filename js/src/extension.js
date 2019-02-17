@@ -23,9 +23,5 @@ if (window.require) {
 
 // Export the required load_ipython_extension
 module.exports = {
-    load_ipython_extension: function() {
-        if (window.Jupyter) {
-            Jupyter.keyboard_manager.command_shortcuts.remove_shortcut("m");
-        }
-    }
+    load_ipython_extension: function() {}
 };
