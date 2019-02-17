@@ -20,7 +20,6 @@ from traitlets import (
 
 import requests
 
-from IPython.core.magic import register_line_cell_magic
 from IPython.display import (
     display,
     clear_output,
@@ -111,7 +110,6 @@ class SigPlot(widgets.DOMWidget):
             self.arrays.append(self.array_obj)
             self.oldArrays = self.arrays
 
-    @register_line_cell_magic
     def overlay_array(self, data):
         if not isinstance(data, (list, tuple, np.ndarray)):
             raise TypeError(
@@ -170,7 +168,6 @@ class SigPlot(widgets.DOMWidget):
         self.hrefs.append(self.href_obj)
         self.oldHrefs = self.hrefs
 
-    @register_line_cell_magic
     def overlay_href(self, paths):
         # TODO (sat 2018-11-08): This does not trigger a plot update like
         # show_href does. Seems like a recipe for confusion. Should probably
@@ -185,7 +182,6 @@ class SigPlot(widgets.DOMWidget):
     def display_as_png(self):
         print("Hello")
 
-    @register_line_cell_magic  # noqa: C901
     def plot(self, layer_type='1D', subsize=None):
         try:
             display(self)
@@ -239,7 +235,6 @@ class SigPlot(widgets.DOMWidget):
             clear_output()
             raise
 
-    @register_line_cell_magic
     def overlay_file(self, path):
         if not isinstance(path, StringType):
             raise TypeError(
