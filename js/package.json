@@ -36,7 +36,7 @@
     "@jupyter-widgets/base": "^1.2.2",
     "britecharts": "^1.7.2",
     "d3": "^4.9.1",
-    "sigplot": "^2.0.0-rc8",
+    "sigplot": "^2.0.0-rc9",
     "underscore": "^1.8.3"
   }
 }
