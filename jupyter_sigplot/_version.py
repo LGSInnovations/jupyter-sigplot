@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-version_info = (0, 1, 2, 'final', 0)
+version_info = (0, 1, 3, 'final', 0)
 
 _specifier_ = {
     'alpha': 'a',
