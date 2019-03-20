@@ -11,43 +11,90 @@ ip = get_ipython()
 from jupyter_sigplot.sigplot import SigPlot  # noqa: E402
 from testutil import EnvironmentVariable  # noqa: E402
 
+###########################################################################
+# There are three ways to submit two types of data to the plot widget.
+#
+# 1) Put an array or a filename/URL in the args when creating a new plot
+# or Create a plot, then use:
+# 2) overlay_array() or overlay_href(), then call plot()
+# or Create and display a plot, then use:
+# 3) show_array() or show_href()  Doesn't need plot()
+#
+###########################################################################
+
+
+###########################################################################
+# Basic tests.  Can we create a plot?  Can we submit a file to plot?
+# Can we change options?
+###########################################################################
+
 
 def test_empty_object():
     plot = SigPlot()
+    # instance variables
     assert plot.inputs == []
     assert plot.hrefs == []
     assert plot.arrays == []
+    # traitlets
     assert plot.options == {}
+    assert plot.href_obj == {}
+    assert plot.array_obj == {}
+    assert plot.oldHrefs == []
+    assert plot.oldArrays == []
 
 
 def test_non_empty_object():
     plot = SigPlot("foo.tmp")
+    # instance variables
     assert plot.inputs == ["foo.tmp"]
     assert plot.hrefs == []
     assert plot.arrays == []
+    # traitlets
     assert plot.options == {}
+    assert plot.href_obj == {}
+    assert plot.array_obj == {}
+    assert plot.oldHrefs == []
+    assert plot.oldArrays == []
 
 
 def test_change_settings():
     options = {'noyaxis': True, 'noxaxis': True}
     plot = SigPlot("foo.tmp", options=options)
+    # instance variables
     assert plot.inputs == ["foo.tmp"]
     assert plot.hrefs == []
     assert plot.arrays == []
+    # traitlets
     assert plot.options == options
+    assert plot.href_obj == {}
+    assert plot.array_obj == {}
+    assert plot.oldHrefs == []
+    assert plot.oldArrays == []
 
     new_options = {'noyaxis': False, 'xi': True}
     plot.change_settings(**new_options)
+    # instance variables
     assert plot.inputs == ["foo.tmp"]
     assert plot.hrefs == []
     assert plot.arrays == []
+    # traitlets
     assert plot.options == {'noyaxis': False, 'noxaxis': True, 'xi': True}
+    assert plot.href_obj == {}
+    assert plot.array_obj == {}
+    assert plot.oldHrefs == []
+    assert plot.oldArrays == []
+
+
+###########################################################################
+# show_array tests
+###########################################################################
 
 
 def test_show_1d_array():
     plot = SigPlot()
-    assert plot.arrays == []
     assert plot.array_obj == {}
+    assert plot.arrays == []
+    assert plot.oldArrays == []
 
     data = [1, 2, 3]
     layer_type = '1D'
@@ -60,34 +107,60 @@ def test_show_1d_array():
     }
     assert plot.array_obj == array_obj
     assert plot.arrays == [array_obj]
+    assert plot.oldArrays == [array_obj]
 
 
 def test_subsize_show_2d_array():
     plot = SigPlot()
-    assert plot.arrays == []
     assert plot.array_obj == {}
+    assert plot.arrays == []
+    assert plot.oldArrays == []
 
-    data = [[1, 2, 3], [3, 4, 5]]
+    input_data = [[1, 2, 3], [3, 4, 5]]
+    overrides = {}
     layer_type = '2D'
-    subsize = len(data[0])
-    plot.show_array(data, layer_type=layer_type, subsize=subsize)
+    subsize = len(input_data[0])
+    plot.show_array(input_data, overrides=overrides,
+                    layer_type=layer_type, subsize=subsize)
 
+    flatdata = np.array(input_data).flatten().tolist()
     array_obj = {
-        "data": data,
+        "data": flatdata,
         "overrides": {
-            "subsize": subsize
+            "subsize": subsize,
         },
         "layerType": layer_type,
     }
     assert plot.array_obj == array_obj
     assert plot.arrays == [array_obj]
+    assert plot.oldArrays == [array_obj]
 
 
+# We calculate the subsize in _prepare_array_input now
 def test_no_subsize_show_2d_array():
     plot = SigPlot()
     data = [[1, 2, 3], [3, 4, 5]]
-    with pytest.raises(ValueError):
-        plot.show_array(data, layer_type='2D', subsize=None)
+    layer_type = '2D'
+    plot.show_array(data, layer_type=layer_type, subsize=None)
+
+    layer_type = '2D'
+    subsize = len(data[0])
+    flatdata = np.array(data).flatten().tolist()
+    array_obj = {
+        "data": flatdata,
+        "overrides": {
+            "subsize": subsize,
+        },
+        "layerType": layer_type,
+    }
+    assert plot.array_obj == array_obj
+    assert plot.arrays == [array_obj]
+    assert plot.oldArrays == [array_obj]
+
+
+###########################################################################
+# overlay_array tests
+###########################################################################
 
 
 def test_overlay_array_bad_type():
@@ -104,8 +177,13 @@ def test_overlay_array_empty():
     assert plot.inputs == []
 
     data = []
+    array_obj = {
+        "data": data,
+        "overrides": {},
+        "layerType": "1D",
+    }
     plot.overlay_array(data)
-    assert plot.inputs == [data]
+    assert plot.inputs == [array_obj]
 
 
 def test_overlay_array_non_empty():
@@ -113,14 +191,25 @@ def test_overlay_array_non_empty():
     assert plot.inputs == []
 
     data = [1, 2, 3]
+    array_obj = {
+        "data": data,
+        "overrides": {},
+        "layerType": "1D",
+    }
     plot.overlay_array(data)
-    assert plot.inputs == [data]
+    assert plot.inputs == [array_obj]
+
+
+###############################################################################
+# show_href tests
+###############################################################################
 
 
 def test_show_href_url():
     plot = SigPlot()
     assert plot.href_obj == {}
     assert plot.hrefs == []
+    assert plot.oldHrefs == []
 
     path = "http://sigplot.lgsinnovations.com/dat/sin.tmp"
     layer_type = "1D"
@@ -140,8 +229,6 @@ def test_show_href_url():
 
 def test_show_href_file_absolute_already_in_cwd():
     plot = SigPlot()
-
-    assert plot.inputs == []
 
     path = os.path.join(os.getcwd(), "sin.tmp")
     plot.show_href(path, '1D')
@@ -189,6 +276,11 @@ def test_show_href_file_relative(symlink_mock, mkdir_mock):
     assert symlink_mock.call_args[0] == (fpath, local_path)
 
 
+###########################################################################
+# overlay_href tests
+###########################################################################
+
+
 def test_overlay_href_non_empty_file():
     plot = SigPlot()
     assert plot.inputs == []
@@ -209,6 +301,11 @@ def test_overlay_href_non_empty_http():
     assert plot.inputs == ["sin.tmp"]
 
     os.remove("./sin.tmp")
+
+
+###########################################################################
+# href plot instantiation tests
+###########################################################################
 
 
 @patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
@@ -246,14 +343,24 @@ def test_plot_two_href(show_href_mock):
     assert plot.done
 
 
+###########################################################################
+# mixed href and array plot instantiation tests
+###########################################################################
+
+
 @patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_mixed(show_array_mock, show_href_mock):
     href = "foo.tmp"
     arr = [1, 2, 3, 4]
+    array_obj = {
+        "data": arr,
+        "overrides": {},
+        "layerType": "1D",
+    }
 
     plot = SigPlot(href, arr)
-    assert plot.inputs == [href, arr]
+    assert plot.inputs == [href, array_obj]
 
     plot.plot()
     assert show_href_mock.call_count == 1
@@ -263,102 +370,118 @@ def test_plot_mixed(show_array_mock, show_href_mock):
                                             "layerType": "1D",
                                             },)
 
-    assert show_array_mock.call_args[0] == (arr, )
-    assert show_array_mock.call_args[1] == {
-        "layer_type": "1D",
-        "subsize": None
-    }
+    assert show_array_mock.call_args[0] == (array_obj, )
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+###########################################################################
+# array plot instantiation tests
+###########################################################################
+
+
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_1d(show_array_mock):
     arr = np.array([1, 2, 3, 4])
+    data = arr.tolist()
+    array_obj = {
+        "data": data,
+        "overrides": {},
+        "layerType": "1D",
+    }
 
     plot = SigPlot(arr)
-    assert plot.inputs == [arr]
+    assert plot.inputs == [array_obj]
 
     plot.plot()
     assert show_array_mock.call_count == 1
-    print(show_array_mock.call_args)
-    assert show_array_mock.call_args[0] == (arr.tolist(), )
-    assert show_array_mock.call_args[1] == {
-        "layer_type": "1D",
-        "subsize": None
-    }
+    assert show_array_mock.call_args[0] == (array_obj, )
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_2d_no_subsize(show_array_mock):
     arr = [[1, 2, 3, 4], [5, 6, 7, 8]]
+    data = np.array(arr).flatten().tolist()
+    array_obj = {
+        "data": data,
+        "overrides": {},
+        "layerType": "1D",
+    }
 
     plot = SigPlot(arr)
-    assert plot.inputs == [arr]
+    assert plot.inputs == [array_obj]
 
     plot.plot(layer_type="2D")
     assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
-    assert show_array_mock.call_args[1] == {
-        "layer_type": "2D",
-        "subsize": len(arr[0])
-    }
+    assert show_array_mock.call_args[0] == (array_obj, )
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_2d_with_subsize(show_array_mock):
     arr = [[1, 2, 3, 4], [5, 6, 7, 8]]
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [arr]
-
-    subsize = len(arr[0])
-    plot.plot(layer_type="2D", subsize=subsize)
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
-    assert show_array_mock.call_args[1] == {
-        "layer_type": "2D",
-        "subsize": subsize
+    # expected_output = np.array(arr).flatten().tolist()
+    expected_output = [1, 2, 3, 4, 5, 6, 7, 8]
+    array_obj = {
+        "data": expected_output,
+        "overrides": {},
+        "layerType": "1D",
     }
 
+    plot = SigPlot(arr)
+    assert plot.inputs == [array_obj]
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+    plot.plot(layer_type="2D")
+    assert show_array_mock.call_count == 1
+    assert show_array_mock.call_args[0] == (array_obj, )
+
+
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_3d(show_array_mock):
     arr = [[[1], [2], [3], [4]], [[5], [6], [7], [8]]]
 
-    plot = SigPlot(arr)
-    assert plot.inputs == [arr]
-
-    subsize = len(arr[0])
     with pytest.raises(ValueError):
-        plot.plot(layer_type="2D", subsize=subsize)
+        SigPlot(arr)
+
+    plot1 = SigPlot()
+    with pytest.raises(ValueError):
+        plot1.overlay_array(arr)
+
+    plot2 = SigPlot()
+    with pytest.raises(ValueError):
+        plot2.show_array(arr)
 
 
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
 def test_plot_expected_2d(show_array_mock):
     arr = [1, 2, 3, 4]
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [arr]
-
-    with pytest.raises(ValueError):
-        plot.plot(layer_type="2D")
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot.show_array')
-def test_plot_expected_2d_with_subsize(show_array_mock):
-    arr = [1, 2, 3, 4]
-
-    subsize = 2
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [arr]
-
-    plot.plot(layer_type="2D", subsize=subsize)
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (np.array(arr).flatten().tolist(), )
-    assert show_array_mock.call_args[1] == {
-        "layer_type": "2D",
-        "subsize": subsize
+    array_obj = {
+        "data": arr,
+        "overrides": {},
+        "layerType": "1D",
     }
+
+    plot = SigPlot(arr)
+    assert plot.inputs == [array_obj]
+
+
+@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
+def test_plot_expected_2d_with_layer_type(show_array_mock):
+    arr = [1, 2, 3, 4]
+    array_obj = {
+        "data": arr,
+        "overrides": {},
+        "layerType": "1D",
+    }
+
+    plot = SigPlot(arr)
+    assert plot.inputs == [array_obj]
+
+    plot.plot(layer_type="2D")
+    assert show_array_mock.call_count == 1
+    assert show_array_mock.call_args[0] == (array_obj, )
+
+
+###########################################################################
+# overlay_file tests
+###########################################################################
 
 
 def test_overlay_file_non_empty():
@@ -377,6 +500,11 @@ def test_overlay_file_bad_type():
     path = 3
     with pytest.raises(TypeError):
         plot.overlay_file(path)
+
+
+###########################################################################
+# Other tests
+###########################################################################
 
 
 def test_unravel_path_no_resolvers():
