@@ -25,7 +25,6 @@ from IPython.display import (
     clear_output,
 )
 
-
 _py3k = sys.version_info[0] == 3
 if _py3k:
     StringType = (str, bytes)
@@ -43,13 +42,8 @@ class SigPlot(widgets.DOMWidget):
     array_obj = Dict().tag(sync=True)
     done = Bool(False).tag(sync=True)
     options = Dict().tag(sync=True)
-    inputs = []
-    arrays = []
-    hrefs = []
     oldArrays = List().tag(sync=True)
     oldHrefs = List().tag(sync=True)
-    imageOutput = Unicode("img").tag(sync=True)
-    dimension = 1
     # Sequence of callables used by _prepare_file_input to resolve relative
     # pathnames
     path_resolvers = []
@@ -79,7 +73,7 @@ class SigPlot(widgets.DOMWidget):
             if isinstance(arg, StringType):
                 self.overlay_href(arg)
             else:
-                self.inputs.append(arg)
+                self.overlay_array(arg)
         super(SigPlot, self).__init__(**kwargs)
 
     def change_settings(self, **kwargs):
@@ -88,35 +82,22 @@ class SigPlot(widgets.DOMWidget):
         new_options.update(kwargs)
         self.options = new_options
 
-    def show_array(self, data, layer_type="1D", subsize=None):
-        overrides = {}
-        if layer_type == "2D":
-            # subsize is *required* if it's 2-D
-            if subsize is None and isinstance(data, (list, tuple)):
-                raise ValueError("For xraster, a subsize is required")
-            elif subsize is not None and isinstance(data, (list, tuple)):
-                overrides.update({
-                    "subsize": subsize,
-                })
-        # TODO (sat 2018-11-06): I believe this can trigger extraneous logic
-        # in the client; we should first check whether the new array_obj is
-        # already in oldArrays, and only assign to self.array_obj if it's not
-        self.array_obj = {
-            "data": data,
-            "overrides": overrides,
-            "layerType": layer_type,
-        }
-        if self.array_obj not in self.arrays:
+    def show_array(self, data, overrides=None, layer_type="1D", subsize=None):
+        array_obj = _prepare_array_input(data, overrides, layer_type, subsize)
+        self._show_array_internal(array_obj)
+
+    def _show_array_internal(self, array_obj):
+        if array_obj in self.arrays:
+            return
+        else:
+            self.array_obj = array_obj
             self.arrays.append(self.array_obj)
             self.oldArrays = self.arrays
 
-    def overlay_array(self, data):
-        if not isinstance(data, (list, tuple, np.ndarray)):
-            raise TypeError(
-                "``data`` can only be Union[List, Tuple, np.ndarray]"
-            )
-
-        self.inputs.append(data)
+    def overlay_array(self, data, overrides=None,
+                      layer_type="1D", subsize=None):
+        array_obj = _prepare_array_input(data, overrides, layer_type, subsize)
+        self.inputs.append(array_obj)
 
     def show_href(self, fpath, layer_type):  # noqa: C901
         """
@@ -139,16 +120,16 @@ class SigPlot(widgets.DOMWidget):
         :Example:
         >>> plot = SigPlot()
         >>> display(plot)
-        >>> plot.overlay_href('foo.tmp', layer_type='2D')
+        >>> plot.show_href('foo.tmp', layer_type='2D')
         """
         for pi in _prepare_href_input(fpath,
                                       self.data_dir,
                                       self.path_resolvers):
-            obj = {
+            href_obj = {
                 "filename": pi,
                 "layerType": layer_type,
             }
-            self._show_href_internal(obj)
+            self._show_href_internal(href_obj)
 
     def _show_href_internal(self, href_obj):  # noqa: C901
         """
@@ -179,49 +160,20 @@ class SigPlot(widgets.DOMWidget):
                                              self.path_resolvers)
         self.inputs.extend(prepared_paths)
 
-    def display_as_png(self):
-        print("Hello")
-
-    def plot(self, layer_type='1D', subsize=None):
+    def plot(self, layer_type=None):
         try:
             display(self)
             for arg in self.inputs:
-                if isinstance(arg, (tuple, list, np.ndarray)):
-                    # TODO (sat 2018-11-08): I think this needs to move into a
-                    # function so we can test it better. At that point, we may
-                    # also be able to specify it as the serializer for the
-                    # traitlet via the `to_json` keyword argument
-                    data = arg
-                    if layer_type == "2D":
-                        data = np.asarray(data)
-                        if len(data.shape) != 2 and subsize is None:
-                            raise ValueError(
-                                "For layer_type 2D: data passed in needs"
-                                " to be a 2-D array or ``subsize`` "
-                                "must be provided"
-                            )
-                        elif len(data.shape) == 2 and subsize is None:
-                            subsize = data.shape[-1]
-                            data = data.flatten().tolist()
-                        elif len(data.shape) == 2 and subsize is not None:
-                            data = data.flatten().tolist()
-                        elif len(data.shape) == 1 and subsize is not None:
-                            data = arg
-                        else:
-                            raise ValueError(
-                                "For layer_type 2D: data passed in needs"
-                                " to be a 2-D array or provide a valid subsize"
-                            )
-                    else:
-                        if isinstance(arg, np.ndarray):
-                            data = data.tolist()
-                    self.show_array(
-                        data, layer_type=layer_type, subsize=subsize)
-
-                else:
-                    # All href arguments are already separated and prepared
-                    # by overlay_href / overlay_file (the only functions that
-                    # add hrefs to self.inputs)
+                if isinstance(arg, dict):
+                    if 'data' in arg.keys():
+                        self._show_array_internal({
+                            "data": arg['data'],
+                            "overrides": arg['overrides'],
+                            "layerType": arg['layerType'],
+                            })
+                elif isinstance(arg, StringType):
+                    if layer_type is None:
+                        layer_type = "1D"
                     self._show_href_internal({
                         "filename": arg,
                         # TODO (sat 2018-11-09): I think we should specify
@@ -230,6 +182,8 @@ class SigPlot(widgets.DOMWidget):
                         # multiple 2D layers, though.
                         "layerType": layer_type,
                     })
+                else:
+                    raise ValueError("Unknown input type")
             self.done = True
         except Exception:
             clear_output()
@@ -241,6 +195,54 @@ class SigPlot(widgets.DOMWidget):
                 "``path`` must be a string or ``Path`` (Python 3) type"
             )
         self.overlay_href(path)
+
+# End of class SigPlot
+###########################################################################
+
+
+def _prepare_array_input(data, overrides, layer_type, subsize):
+    if not isinstance(data, (list, tuple, np.ndarray)):
+        # TODO (ddw/sat 20190419) we need a stronger check.  What if it's an
+        # array of strings?  Consider ['foo', sys], which will pass np.array()
+        # but not convert to JSON, nor be plottable
+        raise TypeError("Data need to be list, tuple, or ndarray")
+
+    data = np.array(data)
+
+    if len(data.shape) > 2:
+        raise ValueError(
+                'SigPlot only supports 1- and 2-dimensional inputs (got %r)' %
+                (data.shape,))
+
+    new_overrides = {}
+    if overrides:
+        if not isinstance(overrides, dict):
+            raise TypeError(
+                    'Overrides should be a dictionary (got %r)' %
+                    overrides)
+        new_overrides.update(overrides)
+
+    if layer_type not in ("1D", "2D"):
+        # Guess layer_type from data
+        if len(data.shape) == 2:
+            layer_type = "2D"
+        else:
+            layer_type = "1D"
+
+    if layer_type == "2D" and not subsize:
+        subsize = data.shape[-1]
+
+    if subsize:
+        new_overrides["subsize"] = subsize
+
+    data = data.flatten().tolist()
+    array_obj = {
+        "data": data,
+        "overrides": new_overrides,
+        "layerType": layer_type,
+    }
+
+    return array_obj
 
 
 def _require_dir(d):
@@ -438,5 +440,4 @@ def _prepare_href_input(orig_inputs, local_dir, resolvers=None):
             # split+dispatch idiom at the point of call.
             pi = _prepare_file_input(oi, local_dir, resolvers)
         prepared.append(pi)
-
     return prepared
