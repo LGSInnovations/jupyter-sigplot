@@ -1,505 +1,136 @@
 #!/usr/bin/env python
 import os
 
+import numpy as np
 import pytest
 from mock import patch
-import numpy as np
 from IPython.testing.globalipapp import get_ipython
 
 ip = get_ipython()
 
-from jupyter_sigplot.sigplot import SigPlot  # noqa: E402
+from jupyter_sigplot.sigplot import Plot  # noqa: E402
 from testutil import EnvironmentVariable  # noqa: E402
 
-###########################################################################
-# There are three ways to submit two types of data to the plot widget.
-#
-# 1) Put an array or a filename/URL in the args when creating a new plot
-# or Create a plot, then use:
-# 2) overlay_array() or overlay_href(), then call plot()
-# or Create and display a plot, then use:
-# 3) show_array() or show_href()  Doesn't need plot()
-#
-###########################################################################
-
 
 ###########################################################################
-# Basic tests.  Can we create a plot?  Can we submit a file to plot?
-# Can we change options?
+# Basic tests.  Can we create a plot?
 ###########################################################################
 
 
 def test_empty_object():
-    plot = SigPlot()
+    plot = Plot()
     # instance variables
-    assert plot.inputs == []
-    assert plot.hrefs == []
-    assert plot.arrays == []
+    assert plot.data_dir == ''
+    assert plot.path_resolvers == []
     # traitlets
-    assert plot.options == {}
-    assert plot.href_obj == {}
-    assert plot.array_obj == {}
-    assert plot.oldHrefs == []
-    assert plot.oldArrays == []
+    assert plot.command_and_arguments == {}
+    assert plot.plot_options == {}
+    assert plot.progress == 0.0
+    assert not plot.done
 
 
 def test_non_empty_object():
-    plot = SigPlot("foo.tmp")
-    # instance variables
-    assert plot.inputs == ["foo.tmp"]
-    assert plot.hrefs == []
-    assert plot.arrays == []
-    # traitlets
-    assert plot.options == {}
-    assert plot.href_obj == {}
-    assert plot.array_obj == {}
-    assert plot.oldHrefs == []
-    assert plot.oldArrays == []
-
-
-def test_change_settings():
+    data_dir = "/tmp"
+    path_resolvers = ["/data"]
     options = {'noyaxis': True, 'noxaxis': True}
-    plot = SigPlot("foo.tmp", options=options)
+    plot = Plot(
+        data_dir=data_dir,
+        path_resolvers=path_resolvers,
+        **options
+    )
     # instance variables
-    assert plot.inputs == ["foo.tmp"]
-    assert plot.hrefs == []
-    assert plot.arrays == []
+    assert plot.data_dir == data_dir
+    assert plot.path_resolvers == path_resolvers
+
     # traitlets
-    assert plot.options == options
-    assert plot.href_obj == {}
-    assert plot.array_obj == {}
-    assert plot.oldHrefs == []
-    assert plot.oldArrays == []
+    assert plot.command_and_arguments == {}
+    assert plot.plot_options == options
+    assert plot.progress == 0.0
+    assert not plot.done
 
-    new_options = {'noyaxis': False, 'xi': True}
-    plot.change_settings(**new_options)
-    # instance variables
-    assert plot.inputs == ["foo.tmp"]
-    assert plot.hrefs == []
-    assert plot.arrays == []
-    # traitlets
-    assert plot.options == {'noyaxis': False, 'noxaxis': True, 'xi': True}
-    assert plot.href_obj == {}
-    assert plot.array_obj == {}
-    assert plot.oldHrefs == []
-    assert plot.oldArrays == []
+
+def test_available_commands():
+    plot = Plot()
+    available_commands = [
+        'change_settings',
+        'overlay_href',
+        'overlay_array',
+    ]
+    assert plot.available_commands == available_commands
 
 
 ###########################################################################
-# show_array tests
+# Command tests
 ###########################################################################
 
 
-def test_show_1d_array():
-    plot = SigPlot()
-    assert plot.array_obj == {}
-    assert plot.arrays == []
-    assert plot.oldArrays == []
-
-    data = [1, 2, 3]
-    layer_type = '1D'
-    plot.show_array(data, layer_type=layer_type)
-
-    array_obj = {
-        "data": data,
-        "overrides": {},
-        "layerType": layer_type,
+def test_getattr_change_settings():
+    plot = Plot()
+    options = {'autol': 1000}
+    plot.change_settings(options)
+    assert plot.command_and_arguments == {
+        'command': 'change_settings',
+        'arguments': [options]
     }
-    assert plot.array_obj == array_obj
-    assert plot.arrays == [array_obj]
-    assert plot.oldArrays == [array_obj]
 
 
-def test_subsize_show_2d_array():
-    plot = SigPlot()
-    assert plot.array_obj == {}
-    assert plot.arrays == []
-    assert plot.oldArrays == []
+def test_UPPERCASE_getattr_change_settings():
+    plot = Plot()
+    options = {'autol': 1000}
 
-    input_data = [[1, 2, 3], [3, 4, 5]]
-    overrides = {}
-    layer_type = '2D'
-    subsize = len(input_data[0])
-    plot.show_array(input_data, overrides=overrides,
-                    layer_type=layer_type, subsize=subsize)
+    with pytest.raises(AttributeError):
+        plot.CHANGE_SETTINGS(options)
 
-    flatdata = np.array(input_data).flatten().tolist()
-    array_obj = {
-        "data": flatdata,
-        "overrides": {
-            "subsize": subsize,
-        },
-        "layerType": layer_type,
+
+def test_attr_error():
+    plot = Plot()
+    with pytest.raises(AttributeError):
+        plot.foobar('blah')
+
+
+def test_overlay_array():
+    plot = Plot()
+    lst = [1, 2, 3]
+    plot.overlay_array(lst)
+    assert plot.command_and_arguments == {
+        'command': 'overlay_array',
+        'arguments': [memoryview(np.array(lst, dtype=np.float32))],
     }
-    assert plot.array_obj == array_obj
-    assert plot.arrays == [array_obj]
-    assert plot.oldArrays == [array_obj]
-
-
-# We calculate the subsize in _prepare_array_input now
-def test_no_subsize_show_2d_array():
-    plot = SigPlot()
-    data = [[1, 2, 3], [3, 4, 5]]
-    layer_type = '2D'
-    plot.show_array(data, layer_type=layer_type, subsize=None)
-
-    layer_type = '2D'
-    subsize = len(data[0])
-    flatdata = np.array(data).flatten().tolist()
-    array_obj = {
-        "data": flatdata,
-        "overrides": {
-            "subsize": subsize,
-        },
-        "layerType": layer_type,
-    }
-    assert plot.array_obj == array_obj
-    assert plot.arrays == [array_obj]
-    assert plot.oldArrays == [array_obj]
-
-
-###########################################################################
-# overlay_array tests
-###########################################################################
 
 
 def test_overlay_array_bad_type():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    data = 3
+    plot = Plot()
+    lst = ['foo', 'bar', 'baz']
     with pytest.raises(TypeError):
-        plot.overlay_array(data)
+        plot.overlay_array(lst)
 
 
-def test_overlay_array_empty():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    data = []
-    array_obj = {
-        "data": data,
-        "overrides": {},
-        "layerType": "1D",
-    }
-    plot.overlay_array(data)
-    assert plot.inputs == [array_obj]
-
-
-def test_overlay_array_non_empty():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    data = [1, 2, 3]
-    array_obj = {
-        "data": data,
-        "overrides": {},
-        "layerType": "1D",
-    }
-    plot.overlay_array(data)
-    assert plot.inputs == [array_obj]
-
-
-###############################################################################
-# show_href tests
-###############################################################################
-
-
-def test_show_href_url():
-    plot = SigPlot()
-    assert plot.href_obj == {}
-    assert plot.hrefs == []
-    assert plot.oldHrefs == []
-
-    path = "http://sigplot.lgsinnovations.com/dat/sin.tmp"
-    layer_type = "1D"
-    plot.show_href(path, layer_type)
-
-    href_obj = {
-        "filename": "sin.tmp",
-        "layerType": layer_type,
-    }
-    assert plot.href_obj == href_obj
-    assert plot.hrefs == [href_obj]
-    assert plot.oldHrefs == [href_obj]
-
-    assert os.path.exists("./sin.tmp")
-    os.remove("./sin.tmp")
-
-
-def test_show_href_file_absolute_already_in_cwd():
-    plot = SigPlot()
-
-    path = os.path.join(os.getcwd(), "sin.tmp")
-    plot.show_href(path, '1D')
-
-    href_obj = {
-        "filename": 'sin.tmp',
-        "layerType": '1D',
-    }
-    assert plot.href_obj == href_obj
-    assert plot.hrefs == [href_obj]
-    assert plot.oldHrefs == [href_obj]
-
-
-@patch('os.mkdir')
-@patch('os.symlink')
-def test_show_href_file_absolute_not_already_there(symlink_mock, mkdir_mock):
-    path = "~/foo.tmp"
-    plot = SigPlot()
-
-    plot.show_href(path, '1D')
-    assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0][0] == '.'
-
-    assert symlink_mock.call_count == 1
-
-    local_path = 'foo.tmp'
-    fpath = os.path.expanduser(os.path.expandvars(path))
-    assert symlink_mock.call_args[0] == (fpath, local_path)
-
-
-@patch('os.mkdir')
-@patch('os.symlink')
-def test_show_href_file_relative(symlink_mock, mkdir_mock):
-    path = "../foo.tmp"
-    plot = SigPlot()
-
-    plot.show_href(path, '1D')
-    assert mkdir_mock.call_count == 1
-    assert mkdir_mock.call_args[0][0] == '.'
-
-    assert symlink_mock.call_count == 1
-
-    local_path = 'foo.tmp'
-    fpath = os.path.expanduser(os.path.expandvars(path))
-    assert symlink_mock.call_args[0] == (fpath, local_path)
-
-
-###########################################################################
-# overlay_href tests
-###########################################################################
-
-
-def test_overlay_href_non_empty_file():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    path = "foo.tmp"
-    plot.overlay_href(path)
-    assert plot.inputs == [path]
-
-
-def test_overlay_href_non_empty_http():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    path = "http://sigplot.lgsinnovations.com/dat/sin.tmp"
-    plot.overlay_href(path)
-
-    assert os.path.exists("./sin.tmp")
-    assert plot.inputs == ["sin.tmp"]
-
-    os.remove("./sin.tmp")
-
-
-###########################################################################
-# href plot instantiation tests
-###########################################################################
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
-def test_plot_one_href(show_href_mock):
-    href = "foo.tmp"
-    plot = SigPlot(href)
-    assert plot.inputs == [href]
-
-    plot.plot()
-    assert show_href_mock.call_count == 1
-    assert show_href_mock.call_args[0] == ({
-        "filename": href,
-        "layerType": "1D"},)
-    assert show_href_mock.call_args[1] == {}
-    assert plot.done
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
-def test_plot_two_href(show_href_mock):
-    href1 = "foo.tmp"
-    href2 = "sin.tmp"
-    href = "|".join((href1, href2))
-    plot = SigPlot(href)
-    assert plot.inputs == [href1, href2]
-
-    plot.plot()
-    assert show_href_mock.call_count == 2
-    args1, kwargs1 = show_href_mock.call_args_list[0]
-    assert args1 == ({"filename": href1, "layerType": "1D"},)
-    assert kwargs1 == {}
-
-    args2, kwargs2 = show_href_mock.call_args_list[1]
-    assert args2 == ({"filename": href2, "layerType": "1D"},)
-    assert kwargs2 == {}
-    assert plot.done
-
-
-###########################################################################
-# mixed href and array plot instantiation tests
-###########################################################################
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_href_internal')
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_mixed(show_array_mock, show_href_mock):
-    href = "foo.tmp"
-    arr = [1, 2, 3, 4]
-    array_obj = {
-        "data": arr,
-        "overrides": {},
-        "layerType": "1D",
+def test_overlay_array_numpy():
+    plot = Plot()
+    lst = np.array([1, 2, 3])
+    plot.overlay_array(lst)
+    assert plot.command_and_arguments == {
+        'command': 'overlay_array',
+        'arguments': [memoryview(lst.astype(np.float32))],
     }
 
-    plot = SigPlot(href, arr)
-    assert plot.inputs == [href, array_obj]
 
-    plot.plot()
-    assert show_href_mock.call_count == 1
-    assert show_array_mock.call_count == 1
-
-    assert show_href_mock.call_args[0] == ({"filename": href,
-                                            "layerType": "1D",
-                                            },)
-
-    assert show_array_mock.call_args[0] == (array_obj, )
-
-
-###########################################################################
-# array plot instantiation tests
-###########################################################################
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_1d(show_array_mock):
-    arr = np.array([1, 2, 3, 4])
-    data = arr.tolist()
-    array_obj = {
-        "data": data,
-        "overrides": {},
-        "layerType": "1D",
-    }
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [array_obj]
-
-    plot.plot()
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (array_obj, )
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_2d_no_subsize(show_array_mock):
-    arr = [[1, 2, 3, 4], [5, 6, 7, 8]]
-    data = np.array(arr).flatten().tolist()
-    array_obj = {
-        "data": data,
-        "overrides": {},
-        "layerType": "1D",
-    }
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [array_obj]
-
-    plot.plot(layer_type="2D")
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (array_obj, )
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_2d_with_subsize(show_array_mock):
-    arr = [[1, 2, 3, 4], [5, 6, 7, 8]]
-    # expected_output = np.array(arr).flatten().tolist()
-    expected_output = [1, 2, 3, 4, 5, 6, 7, 8]
-    array_obj = {
-        "data": expected_output,
-        "overrides": {},
-        "layerType": "1D",
-    }
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [array_obj]
-
-    plot.plot(layer_type="2D")
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (array_obj, )
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_3d(show_array_mock):
-    arr = [[[1], [2], [3], [4]], [[5], [6], [7], [8]]]
-
-    with pytest.raises(ValueError):
-        SigPlot(arr)
-
-    plot1 = SigPlot()
-    with pytest.raises(ValueError):
-        plot1.overlay_array(arr)
-
-    plot2 = SigPlot()
-    with pytest.raises(ValueError):
-        plot2.show_array(arr)
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_expected_2d(show_array_mock):
-    arr = [1, 2, 3, 4]
-    array_obj = {
-        "data": arr,
-        "overrides": {},
-        "layerType": "1D",
-    }
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [array_obj]
-
-
-@patch('jupyter_sigplot.sigplot.SigPlot._show_array_internal')
-def test_plot_expected_2d_with_layer_type(show_array_mock):
-    arr = [1, 2, 3, 4]
-    array_obj = {
-        "data": arr,
-        "overrides": {},
-        "layerType": "1D",
-    }
-
-    plot = SigPlot(arr)
-    assert plot.inputs == [array_obj]
-
-    plot.plot(layer_type="2D")
-    assert show_array_mock.call_count == 1
-    assert show_array_mock.call_args[0] == (array_obj, )
-
-
-###########################################################################
-# overlay_file tests
-###########################################################################
-
-
-def test_overlay_file_non_empty():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    path = "foo.tmp"
-    plot.overlay_file(path)
-    assert plot.inputs == [path]
-
-
-def test_overlay_file_bad_type():
-    plot = SigPlot()
-    assert plot.inputs == []
-
-    path = 3
+def test_overlay_array_numpy_bad_dtype():
+    plot = Plot()
+    lst = np.array(['foo', 'bar', 'baz'])
     with pytest.raises(TypeError):
-        plot.overlay_file(path)
+        plot.overlay_array(lst)
+
+
+@patch('jupyter_sigplot.sigplot.Plot.sync_command_and_arguments')
+def test_overlay_href(traitlet_set_mock):
+    plot = Plot()
+    plot.overlay_href('bar|baz')
+    assert traitlet_set_mock.call_count == 2
+    for call_args in traitlet_set_mock.call_args_list:
+        assert call_args[0][0]['command'] == 'overlay_href'
+        assert len(call_args[0][0]['arguments']) == 1
+        assert call_args[0][0]['arguments'][0] in ('bar', 'baz')
 
 
 ###########################################################################
@@ -743,55 +374,55 @@ def test_prepare_file_input_resolver(unravel_path_mock):
     ]:
         unravel_path_mock.reset_mock()
         _prepare_file_input(fname, '', resolvers)
-        unravel_path_mock.assert_called_once_with(fname, resolvers)
+        unravel_path_mock.assert_called_once_with(fname, resolvers=resolvers)
 
 
 def test_instance_level_resolver():
-    from jupyter_sigplot.sigplot import SigPlot
+    from jupyter_sigplot.sigplot import Plot
 
-    def to_foo(s):
+    def to_foo(_):
         return 'foo'
 
     # If a single path resolver makes it all the way through the prepare step,
     # we assume that other tests ensure more complicated cases do, too.
 
     # Resolver specified in constructor
-    p = SigPlot(path_resolvers=[to_foo])
-    p.overlay_file('baz')
-    assert(p.inputs == ['foo'])
-
-    p = SigPlot('bar', path_resolvers=[to_foo])
-    assert(p.path_resolvers == [to_foo])
-    assert(p.inputs == ['foo'])
-
-    p = SigPlot('bar|baz', path_resolvers=[to_foo])
-    assert(p.inputs == ['foo', 'foo'])
+    p = Plot(path_resolvers=[to_foo])
+    p.overlay_href('baz')
+    assert p.path_resolvers == [to_foo]
+    assert p.command_and_arguments == {
+        'command': 'overlay_href',
+        'arguments': ['foo']
+    }
 
     # Resolver specified after construction
-    p = SigPlot()
+    p = Plot()
     p.path_resolvers = [to_foo]
     p.overlay_href('quux')
-    assert(p.path_resolvers == [to_foo])
-    assert(p.inputs == ['foo'])
+    assert p.path_resolvers == [to_foo]
+    assert p.command_and_arguments == {
+        'command': 'overlay_href',
+        'arguments': ['foo']
+    }
 
 
-def test_class_level_resolver():
-    from jupyter_sigplot.sigplot import SigPlot
+@patch('jupyter_sigplot.sigplot.Plot.sync_command_and_arguments')
+def test_class_level_resolver(traitlet_set_mock):
+    from jupyter_sigplot.sigplot import Plot
 
-    def to_foo(s):
+    def to_foo(_):
         return 'foo'
 
-    SigPlot.path_resolvers = [to_foo]
-
-    # Resolver applied in constructor
-    p = SigPlot('bar.tmp')
-    assert(p.path_resolvers == [to_foo])
-    assert(p.inputs == ['foo'])
+    Plot.path_resolvers = [to_foo]
 
     # Resolver applied post constructor
-    p = SigPlot()
+    p = Plot()
     p.overlay_href('baz|quux.mat')
-    assert(p.inputs == ['foo', 'foo'])
+    assert traitlet_set_mock.call_count == 2
+    for call_args in traitlet_set_mock.call_args_list:
+        assert call_args[0][0]['command'] == 'overlay_href'
+        assert len(call_args[0][0]['arguments']) == 1
+        assert call_args[0][0]['arguments'][0] == 'foo'
 
 
 def test_split_inputs():
@@ -837,7 +468,7 @@ def test_prepare_href_input(prepare_http_input_mock,
             m.reset_mock()
 
     # empty input
-    _prepare_href_input('', local_dir)
+    _prepare_href_input('', None, local_dir)
     prepare_http_input_mock.assert_not_called()
     prepare_file_input_mock.assert_not_called()
 
@@ -852,7 +483,9 @@ def test_prepare_href_input(prepare_http_input_mock,
     _prepare_href_input('https://www.example.com/bar.tmp', local_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
+        local_dir,
+        progress=None
+    )
     prepare_file_input_mock.assert_not_called()
 
     # file and url
@@ -860,7 +493,9 @@ def test_prepare_href_input(prepare_http_input_mock,
     _prepare_href_input('foo.tmp|https://www.example.com/bar.tmp', local_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
+        local_dir,
+        progress=None
+    )
     prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
 
     # order independence
@@ -868,13 +503,17 @@ def test_prepare_href_input(prepare_http_input_mock,
     _prepare_href_input('https://www.example.com/bar.tmp|foo.tmp', local_dir)
     prepare_http_input_mock.assert_called_once_with(
         'https://www.example.com/bar.tmp',
-        local_dir)
+        local_dir,
+        progress=None
+    )
     prepare_file_input_mock.assert_called_once_with('foo.tmp', local_dir, None)
 
     # multiple of each
     reset()
     _prepare_href_input(
         'https://www.example.com/bar.tmp| foo.tmp|baz.tmp|http://www.example.com/quux.tmp  | xyzzy.prm',  # noqa: E501
-        local_dir)
+        local_dir,
+        progress=None
+    )
     assert prepare_http_input_mock.call_count == 2
     assert prepare_file_input_mock.call_count == 3
