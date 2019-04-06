@@ -82,7 +82,7 @@ class SigPlot(widgets.DOMWidget):
         new_options.update(kwargs)
         self.options = new_options
 
-    def show_array(self, data, overrides=None, layer_type="1D", subsize=None):
+    def show_array(self, data, overrides=None, layer_type=None, subsize=None):
         array_obj = _prepare_array_input(data, overrides, layer_type, subsize)
         self._show_array_internal(array_obj)
 
@@ -95,7 +95,7 @@ class SigPlot(widgets.DOMWidget):
             self.oldArrays = self.arrays
 
     def overlay_array(self, data, overrides=None,
-                      layer_type="1D", subsize=None):
+                      layer_type=None, subsize=None):
         array_obj = _prepare_array_input(data, overrides, layer_type, subsize)
         self.inputs.append(array_obj)
 

@@ -402,8 +402,8 @@ def test_plot_2d_no_subsize(show_array_mock):
     data = np.array(arr).flatten().tolist()
     array_obj = {
         "data": data,
-        "overrides": {},
-        "layerType": "1D",
+        "overrides": {'subsize': 4},
+        "layerType": "2D",
     }
 
     plot = SigPlot(arr)
@@ -421,8 +421,8 @@ def test_plot_2d_with_subsize(show_array_mock):
     expected_output = [1, 2, 3, 4, 5, 6, 7, 8]
     array_obj = {
         "data": expected_output,
-        "overrides": {},
-        "layerType": "1D",
+        "overrides": {'subsize': 4},
+        "layerType": "2D",
     }
 
     plot = SigPlot(arr)
