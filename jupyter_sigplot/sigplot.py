@@ -164,10 +164,14 @@ class Plot(widgets.DOMWidget):
             )
             for href in href_list:
                 arguments[0] = href
+
                 # cause the sync to happen
+                # TODO: Figure out why the list comp works
+                #       but passing `arguments` doesn't;
+                #       perhaps it's an addressing issue?
                 self.sync_command_and_arguments({
                     "command": command,
-                    "arguments": arguments,
+                    "arguments": [arg for arg in arguments],
                 })
         else:
             # cause the sync to happen
@@ -177,6 +181,13 @@ class Plot(widgets.DOMWidget):
             })
 
     def sync_command_and_arguments(self, command_and_arguments):
+        """
+
+        :param command_and_arguments:
+        :type command_and_arguments: dict
+        :return:
+        """
+        print(command_and_arguments)
         self.command_and_arguments = command_and_arguments
 
 
