@@ -88,7 +88,6 @@ class Plot(widgets.DOMWidget):
 
         :return: A function wrapper around ``self.send_command``
         :rtype: function
-
         :raises AttributeError: if ``attr`` is not an attribute of
                                 ``self`` or in ``available_commands``
         """

@@ -77,7 +77,6 @@ def test_getattr_change_settings():
 def test_UPPERCASE_getattr_change_settings():
     plot = Plot()
     options = {'autol': 1000}
-
     with pytest.raises(AttributeError):
         plot.CHANGE_SETTINGS(options)
 
