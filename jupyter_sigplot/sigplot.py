@@ -186,7 +186,6 @@ class Plot(widgets.DOMWidget):
         :type command_and_arguments: dict
         :return:
         """
-        print(command_and_arguments)
         self.command_and_arguments = command_and_arguments
 
 
