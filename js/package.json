@@ -34,9 +34,7 @@
   },
   "dependencies": {
     "@jupyter-widgets/base": "^1.2.2",
-    "britecharts": "^1.7.2",
-    "d3": "^4.9.1",
     "sigplot": "^2.0.0-rc14",
-    "underscore": "^1.8.3"
+    "underscore": "^1.9.1"
   }
 }
