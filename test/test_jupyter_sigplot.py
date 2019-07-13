@@ -93,7 +93,7 @@ def test_overlay_array():
     plot.overlay_array(lst)
     assert plot.command_and_arguments == {
         'command': 'overlay_array',
-        'arguments': [memoryview(np.array(lst, dtype=np.float32))],
+        'arguments': [memoryview(np.array(lst, dtype=np.float32)).tobytes()],
     }
 
 
@@ -110,7 +110,7 @@ def test_overlay_array_numpy():
     plot.overlay_array(lst)
     assert plot.command_and_arguments == {
         'command': 'overlay_array',
-        'arguments': [memoryview(lst.astype(np.float32))],
+        'arguments': [memoryview(lst.astype(np.float32)).tobytes()],
     }
 
 
