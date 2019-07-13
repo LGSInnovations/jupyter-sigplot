@@ -6,7 +6,6 @@ from __future__ import (
 )
 
 import errno
-import json
 import os
 import sys
 
