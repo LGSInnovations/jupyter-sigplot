@@ -33,10 +33,10 @@
     "webpack": "^2"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^1.2.2",
-    "britecharts": "^1.7.2",
-    "d3": "^4.9.1",
-    "sigplot": "^2.0.0-rc14",
-    "underscore": "^1.8.3"
+    "@jupyter-widgets/base": "^3.0.0",
+    "britecharts": "^2.14.6",
+    "d3": "^5.15.1",
+    "sigplot": "^2.0.0-rc15",
+    "underscore": "^1.10.2"
   }
 }

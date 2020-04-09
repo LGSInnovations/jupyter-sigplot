@@ -3,3 +3,6 @@ notebook
 numpy
 requests
 ipywidgets
+traitlets
+typing
+six
