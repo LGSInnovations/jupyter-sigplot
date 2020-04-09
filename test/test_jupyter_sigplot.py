@@ -1,15 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytest
 import os
 
+from mock import patch
 import numpy as np
 import pytest
-from mock import patch
 from IPython.testing.globalipapp import get_ipython
 
 ip = get_ipython()
 
 from jupyter_sigplot.sigplot import Plot  # noqa: E402
-from testutil import EnvironmentVariable  # noqa: E402
+from .testutil import EnvironmentVariable  # noqa: E402
 
 
 ###########################################################################
@@ -74,7 +74,7 @@ def test_getattr_change_settings():
     }
 
 
-def test_UPPERCASE_getattr_change_settings():
+def test_uppercase_getattr_change_settings():
     plot = Plot()
     options = {'autol': 1000}
     with pytest.raises(AttributeError):

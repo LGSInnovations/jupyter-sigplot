@@ -3,10 +3,12 @@
 Taken from https://gist.github.com/sidprak/a3571943bcf6df0565c09471ab2f90b8
 
 Usage:
-    os.environ['MYVAR'] = 'oldvalue'
-    with EnvironmentVariable('MYVAR', 'myvalue'):
-        print os.getenv('MYVAR')    # Should print myvalue.
-    print os.getenv('MYVAR')        # Should print oldvalue.
+    >>> os.environ['MYVAR'] = 'oldvalue'
+    >>> with EnvironmentVariable('MYVAR', 'myvalue'):
+    ...     print os.getenv('MYVAR')
+    myvalue
+    >>> print os.getenv('MYVAR')
+    oldvalue
 """
 import os
 
@@ -17,20 +19,19 @@ class EnvironmentVariable(object):
     :param key: Environment variable name.
     :param value: Value to set in environment variable.
     """
+
     def __init__(self, key, value):
         self.key = key
         self.new_value = value
 
     def __enter__(self):
-        """Sets the environment variable and saves the old value.
-        """
+        """Sets the environment variable and saves the old value."""
         self.old_value = os.environ.get(self.key)
         os.environ[self.key] = self.new_value
         return self
 
     def __exit__(self, *args):
-        """Sets the environment variable back to the way it was before.
-        """
+        """Sets the environment variable back to the way it was before."""
         # Check against None explicitly so we restore empty strings too
         if self.old_value is not None:
             os.environ[self.key] = self.old_value

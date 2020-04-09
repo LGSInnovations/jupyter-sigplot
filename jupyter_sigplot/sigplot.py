@@ -1,42 +1,33 @@
 #!/usr/bin/env python
-from __future__ import (
-    absolute_import,
-    print_function,
-    unicode_literals,
-)
-
+from __future__ import absolute_import, print_function
 import errno
 import os
-import sys
 
+try:
+    from pathlib import Path
+except ImportError:
+    pass
+from typing import Union
+from urllib.parse import urlsplit
+
+from IPython.display import display
 import ipywidgets as widgets
 import numpy as np
 import requests
-from traitlets import (
-    Unicode,
-    Bool,
-    Dict,
-    Float,
-)
+import six
+from traitlets import Unicode, Bool, Dict, Float
 
 from ._version import __version__ as version_string
-
-from IPython.display import display
-
-_py3k = sys.version_info[0] == 3
-if _py3k:
-    StringType = (str, bytes)
-else:
-    StringType = (basestring,)
 
 
 class Plot(widgets.DOMWidget):
     """Name and version information required by widgets"""
+
     _view_module_version = Unicode(version_string)
-    _view_name = Unicode('SigPlotView').tag(sync=True)
-    _model_name = Unicode('SigPlotModel').tag(sync=True)
-    _view_module = Unicode('jupyter_sigplot').tag(sync=True)
-    _model_module = Unicode('jupyter_sigplot').tag(sync=True)
+    _view_name = Unicode("SigPlotView").tag(sync=True)
+    _model_name = Unicode("SigPlotModel").tag(sync=True)
+    _view_module = Unicode("jupyter_sigplot").tag(sync=True)
+    _model_module = Unicode("jupyter_sigplot").tag(sync=True)
 
     """The command and arguments that will get sent"""
     command_and_arguments = Dict().tag(sync=True)
@@ -53,23 +44,23 @@ class Plot(widgets.DOMWidget):
     to resolve relative pathnames"""
     path_resolvers = []
 
-    def __init__(self, *args, **kwargs):
-        super(Plot, self).__init__(**kwargs)
+    def __init__(self, data_dir="", **kwargs):
+        super(Plot, self).__init__()
 
         # Where to look for data, and where to cache/symlink remote resources
         # that the server or client cannot access directly. Note that changing
         # the kernel's current directory affects data_dir if it is set as a
         # relative path.
-        self.data_dir = kwargs.pop('data_dir', '')
+        self.data_dir = data_dir
 
-        if 'path_resolvers' in kwargs:
+        if "path_resolvers" in kwargs:
             # Don't use pop()+default because we don't want to override class-
             # level values when not specified here, and we do want to allow
             # specifying None to remove any resolvers.
             #
             # Note that instance-level resolvers will override class-level
             # resolvers per Python semantics.
-            self.path_resolvers = kwargs.pop('path_resolvers')
+            self.path_resolvers = kwargs.pop("path_resolvers")
 
         # Whatever's left is meant for sigplot.js's ``sigplot.Plot``
         self.plot_options = kwargs
@@ -101,6 +92,7 @@ class Plot(widgets.DOMWidget):
                 command = attr
                 arguments = args
                 self.send_command(command, list(arguments), **kwargs)
+
         else:
             # if ``attr`` is not an attribute of ``self``
             # AND does not exist on the client, throw the standard
@@ -111,11 +103,7 @@ class Plot(widgets.DOMWidget):
     @property
     def available_commands(self):
         """Available commands from Sigplot.js that Jupyter-SigPlot can call"""
-        return [
-            'change_settings',
-            'overlay_href',
-            'overlay_array',
-        ]
+        return ["change_settings", "overlay_href", "overlay_array"]
 
     def send_command(self, command, arguments, **_):
         """Sends the Notebook client (JS) the SigPlot.js
@@ -138,28 +126,22 @@ class Plot(widgets.DOMWidget):
         command = command.lower()
 
         # we need to convert the array argument to numpy arrays
-        if command == 'overlay_array':
+        if command == "overlay_array":
             array = np.array(arguments[0])
             # make sure np.dtype is something sigplot can plot
             if not np.issubdtype(array.dtype, np.number):
-                raise TypeError(
-                    'Array passed to overlay_array must be numeric type'
-                )
+                raise TypeError("Array passed to overlay_array must be numeric type")
             arguments[0] = memoryview(array.astype(np.float32))
             # cause the sync to happen
-            self.sync_command_and_arguments({
-                "command": command,
-                "arguments": arguments,
-            })
-        elif command == 'overlay_href':
+            self.sync_command_and_arguments(
+                {"command": command, "arguments": arguments}
+            )
+        elif command == "overlay_href":
             # we still need to download the hrefs locally
             # to avoid CORS
             href = arguments[0]
             href_list = _prepare_href_input(
-                href,
-                self.data_dir,
-                self.progress,
-                self.path_resolvers
+                href, self.data_dir, self.progress, self.path_resolvers
             )
             for href in href_list:
                 arguments[0] = href
@@ -168,16 +150,14 @@ class Plot(widgets.DOMWidget):
                 # TODO: Figure out why the list comp works
                 #       but passing `arguments` doesn't;
                 #       perhaps it's an addressing issue?
-                self.sync_command_and_arguments({
-                    "command": command,
-                    "arguments": [arg for arg in arguments],
-                })
+                self.sync_command_and_arguments(
+                    {"command": command, "arguments": [arg for arg in arguments]}
+                )
         else:
             # cause the sync to happen
-            self.sync_command_and_arguments({
-                "command": command,
-                "arguments": arguments,
-            })
+            self.sync_command_and_arguments(
+                {"command": command, "arguments": arguments}
+            )
 
     def sync_command_and_arguments(self, command_and_arguments):
         """
@@ -193,17 +173,17 @@ class Plot(widgets.DOMWidget):
 ###########################################################################
 
 
-def _require_dir(d):
+def _require_dir(directory):
+    # type: (Union[str, Path]) -> None
     """Creates the path ``d`` similar to ``mkdir -p``
 
-    :param d: Path to create
-    :type d: Union[str, Path]
+    :param directory: Path to create
+    :type directory: Union[str, Path]
 
     :raises: OSError if an error occurs (aside from
              the path already existing)
 
     :Examples:
-    >>> from jupyter_sigplot.sigplot import _require_dir
     >>> import os
     >>> import shutil
     >>> path = '/tmp/foo/bar/baz/1/2/3'
@@ -214,12 +194,9 @@ def _require_dir(d):
     >>> os.path.exists(path)
     False
     """
-    if d == '':
-        # makedirs fails on ''
-        d = '.'
-
     try:
-        os.makedirs(d)
+        # `os.makedirs` fails on ''
+        os.makedirs(directory or ".")
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -244,26 +221,26 @@ def _local_name_for_href(url, local_dir):
     # This function has no side effects, unlike its primary caller,
     # _prepare_http_input . The goal is to make testing easier.
 
-    if not isinstance(url, StringType):
-        raise TypeError("url must be of type str (%r has type %s)" %
-                        (url, type(url)))
+    if not isinstance(url, six.string_types):
+        raise TypeError("url must be of type str (%r has type %s)" % (url, type(url)))
 
-    if not isinstance(local_dir, StringType):
-        raise TypeError("local_dir must be of type str (%r has type %s)" %
-                        (local_dir, type(local_dir)))
+    if not isinstance(local_dir, six.string_types):
+        raise TypeError(
+            "local_dir must be of type str (%r has type %s)"
+            % (local_dir, type(local_dir))
+        )
 
     if not url:
         raise ValueError("Path %r is not a valid filename" % url)
 
-    # TODO (sat 2018-11-07): Note that a URL with a query string
-    # will result in an odd filename. Better to split the URL
-    # more completely, perhaps with urlparse.urlsplit followed by
-    # this split on '/'
-    basename = url.split('/')[-1]
+    # A URL with a query string will result in an odd filename.
+    # Better to split the URL more completely.
+    basename = urlsplit(url).path.split("/")[-1]
 
     local_path = os.path.join(local_dir, basename)
-    # TODO (sat 2018-11-07): Either deconflict this path, or
-    # decide explicitly that we don't need to
+
+    # TODO: Either deconflict this path, or
+    #       decide explicitly that we don't need to
     return local_path
 
 
@@ -292,7 +269,7 @@ def _prepare_http_input(url, local_dir, progress=None):
     r = requests.get(url, stream=True)
 
     # get the total file size
-    total_size = int(r.headers.get('content-length', 0))
+    total_size = int(r.headers.get("content-length", 0))
 
     # we'll want to iterate over the file by chunks
     block_size = 1024
@@ -301,7 +278,7 @@ def _prepare_http_input(url, local_dir, progress=None):
     wrote = 0
 
     # "stream" the remote asset to ``local_file``
-    with open(local_fname, 'wb') as f:
+    with open(local_fname, "wb") as f:
         for data in r.iter_content(block_size):
             # keep track of how much we've written
             f.write(data)
@@ -313,9 +290,9 @@ def _prepare_http_input(url, local_dir, progress=None):
             if progress is not None:
                 progress = wrote / total_size
 
-    # TODO: Make sure we do the right thing if ``local_dir`` is an
-    #       absolute path, doesn't exist, etc.
-    #
+    # TODO: Make sure we do the right thing if ``local_dir``
+    #       is an absolute path or doesn't exist
+
     # The client side of the widget will automatically look for a path
     # relative to ``local_dir``
     return local_fname
@@ -337,8 +314,9 @@ def _unravel_path(path, resolvers=None):
     :rtype: str
 
     :Example:
-    >>> from jupyter_sigplot.sigplot import _unravel_path
-    >>>
+    >>> resolver = lambda c: "/tmp" + c
+    >>> _unravel_path("/foo/bar", [resolver])
+    /tmp/foo/bar
     """
     unraveled = os.path.expanduser(os.path.expandvars(path))
     if resolvers:
@@ -366,13 +344,16 @@ def _local_name_for_file(file_path, local_dir):
     .. note:: Different ``fname`` values may map to the same local path
     .. note:: Expects arguments to already be unraveled.
     """
-    if not isinstance(file_path, StringType):
-        raise TypeError("fpath must be of type str (%r has type %s)" %
-                        (file_path, type(file_path)))
+    if not isinstance(file_path, six.string_types):
+        raise TypeError(
+            "fpath must be of type str (%r has type %s)" % (file_path, type(file_path))
+        )
 
-    if not isinstance(local_dir, StringType):
-        raise TypeError("local_dir must be of type str (%r has type %s)" %
-                        (local_dir, type(local_dir)))
+    if not isinstance(local_dir, six.string_types):
+        raise TypeError(
+            "local_dir must be of type str (%r has type %s)"
+            % (local_dir, type(local_dir))
+        )
 
     if not file_path:
         raise ValueError("Path %r is not a valid filename" % file_path)
@@ -383,7 +364,7 @@ def _local_name_for_file(file_path, local_dir):
     # A bit clunky but works okay for now
     if abs_file_path.startswith(abs_local_dir):
         is_local = True
-        local_relative_path = abs_file_path[len(abs_local_dir + os.path.sep):]
+        local_relative_path = abs_file_path[len(abs_local_dir + os.path.sep) :]
     else:
         is_local = False
         local_relative_path = os.path.basename(abs_file_path)
@@ -455,13 +436,12 @@ def _split_inputs(orig_inputs):
     :rtype: list(str)
 
     :Example:
-    >>> from sigplot import _split_inputs
     >>> _split_inputs('foo|bar')
     ['foo', 'bar']
     """
     # (sat 2018-11-19): If we want to support direct list inputs, this is the
     # place to handle that.
-    return [ii.strip() for ii in orig_inputs.split('|') if ii.strip()]
+    return [ii.strip() for ii in orig_inputs.split("|") if ii.strip()]
 
 
 def _prepare_href_input(orig_inputs, local_dir, progress=None, resolvers=None):
