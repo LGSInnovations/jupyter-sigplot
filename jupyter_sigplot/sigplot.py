@@ -8,7 +8,11 @@ try:
 except ImportError:
     pass
 from typing import Union
-from urllib.parse import urlsplit
+try:
+    from urllib.parse import urlsplit
+except ImportError:
+    # Python 2.x
+    from urlparse import urlparse as urlsplit
 
 from IPython.display import display
 import ipywidgets as widgets
