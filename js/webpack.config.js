@@ -1,3 +1,4 @@
+const fs = require('fs-extra');
 const path = require('path');
 const version = require('./package.json').version;
 
@@ -5,20 +6,17 @@ const version = require('./package.json').version;
  * Custom webpack rules are generally the same for all webpack bundles, hence
  * stored in a separate local variable.
  */
-const loaders = [
+const rules = [
   {test: /\.css$/, use: ["style-loader", "css-loader"]},
-  {test: /\.less$/, use: ["style-loader", "css-loader", "less-loader"]},
 ];
 
-const externals = ['@jupyter-widgets/base'];
+// The static file directory
+const staticDir = path.resolve(__dirname, '..', 'jupyter_sigplot', 'static');
 
-const extOutput = (filename) => {
-  return {
-    filename: filename,
-    path: path.resolve(__dirname, '..', 'jupyter_sigplot', 'static'),
-    libraryTarget: 'amd',
-  };
-};
+// Copy the package.json to static so we can inspect its version.
+fs.copySync('./package.json', path.join(staticDir, 'package.json'))
+
+const externals = ['@jupyter-widgets/base'];
 
 module.exports = [
   /**
@@ -31,8 +29,12 @@ module.exports = [
    * extension.
    */
   {
-    entry: './src/extension.js',
-    output: extOutput('extension.js')
+    entry: './src/nb_extension.js',
+    output: {
+      filename: 'nb_extension.js',
+      path: staticDir,
+      libraryTarget: 'amd'
+    }
   },
 
   /**
@@ -44,11 +46,15 @@ module.exports = [
    * Note: It must be an 'amd' module.
    */
   {
-    entry: './src/index.js',
-    output: extOutput('index.js'),
+    entry: './src/nb_index.js',
+    output: {
+      filename: 'index.js',
+      path: staticDir,
+      libraryTarget: 'amd'
+    },
     devtool: 'source-map',
     module: {
-      rules: loaders
+      rules: rules
     },
     externals: externals,
   },
@@ -69,7 +75,7 @@ module.exports = [
    * by the custom widget embedder.
    */
   {
-    entry: './src/embed.js',
+    entry: './src/index.js',
     output: {
       filename: 'index.js',
       path: path.resolve(__dirname, 'dist'),
@@ -78,7 +84,7 @@ module.exports = [
     },
     devtool: 'source-map',
     module: {
-      rules: loaders
+      rules: rules
     },
     externals: externals,
   }

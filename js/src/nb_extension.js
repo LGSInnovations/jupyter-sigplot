@@ -19,8 +19,7 @@ if (window.require) {
     map: {
       "*": {
         "jupyter_sigplot": "nbextensions/jupyter_sigplot/index",
-        "jupyter-js-widgets": "nbextensions/jupyter-js-widgets/extension",
-
+        // "jupyter-js-widgets": "nbextensions/jupyter-js-widgets/extension",
       }
     }
   });
@@ -30,5 +29,5 @@ if (window.require) {
  * Export the required load_ipython_extension
  */
 module.exports = {
-  load_ipython_extension: () => {}
+  load_ipython_extension: function() {}
 };
