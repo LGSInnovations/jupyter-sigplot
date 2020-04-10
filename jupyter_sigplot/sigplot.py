@@ -134,7 +134,9 @@ class Plot(widgets.DOMWidget):
             array = np.array(arguments[0])
             # make sure np.dtype is something sigplot can plot
             if not np.issubdtype(array.dtype, np.number):
-                raise TypeError("Array passed to overlay_array must be numeric type")
+                raise TypeError(
+                    "Array passed to overlay_array must be numeric type"
+                )
             arguments[0] = memoryview(array.astype(np.float32))
             # cause the sync to happen
             self.sync_command_and_arguments(
@@ -155,7 +157,10 @@ class Plot(widgets.DOMWidget):
                 #       but passing `arguments` doesn't;
                 #       perhaps it's an addressing issue?
                 self.sync_command_and_arguments(
-                    {"command": command, "arguments": [arg for arg in arguments]}
+                    {
+                        "command": command,
+                        "arguments": [arg for arg in arguments]
+                    }
                 )
         else:
             # cause the sync to happen
@@ -226,7 +231,10 @@ def _local_name_for_href(url, local_dir):
     # _prepare_http_input . The goal is to make testing easier.
 
     if not isinstance(url, six.string_types):
-        raise TypeError("url must be of type str (%r has type %s)" % (url, type(url)))
+        raise TypeError(
+            "url must be of type str (%r has type %s)" %
+            (url, type(url))
+        )
 
     if not isinstance(local_dir, six.string_types):
         raise TypeError(
@@ -350,7 +358,8 @@ def _local_name_for_file(file_path, local_dir):
     """
     if not isinstance(file_path, six.string_types):
         raise TypeError(
-            "fpath must be of type str (%r has type %s)" % (file_path, type(file_path))
+            "fpath must be of type str (%r has type %s)" %
+            (file_path, type(file_path))
         )
 
     if not isinstance(local_dir, six.string_types):
@@ -368,7 +377,7 @@ def _local_name_for_file(file_path, local_dir):
     # A bit clunky but works okay for now
     if abs_file_path.startswith(abs_local_dir):
         is_local = True
-        local_relative_path = abs_file_path[len(abs_local_dir + os.path.sep) :]
+        local_relative_path = abs_file_path[len(abs_local_dir + os.path.sep):]
     else:
         is_local = False
         local_relative_path = os.path.basename(abs_file_path)
