@@ -35,7 +35,6 @@
   },
   "dependencies": {
     "@jupyter-widgets/base": "^2 || ^3",
-    "sigplot": "^2.0.0-rc15",
-    "underscore": "^1.10.2"
+    "sigplot": "^2.0.0-rc15"
   }
 }
