@@ -1,5 +1,5 @@
-var jupyter_sigplot = require('./index');
-var base = require('@jupyter-widgets/base');
+const jupyter_sigplot = require('./index');
+const base = require('@jupyter-widgets/base');
 
 module.exports = {
   id: 'jupyter_sigplot',
