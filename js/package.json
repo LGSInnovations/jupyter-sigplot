@@ -14,12 +14,14 @@
   },
   "keywords": [
     "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension",
     "widgets",
     "ipython",
     "ipywidgets"
   ],
   "scripts": {
-    "build": "npm run lint && webpack",
+    "build": "npm run lint && webpack --mode=production",
     "clean": "rm -rf dist/",
     "eslint": "eslint . --fix --ignore-path ../.gitignore",
     "eslint:check": "eslint . --ignore-path ../.gitignore",
