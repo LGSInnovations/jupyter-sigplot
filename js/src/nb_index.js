@@ -12,4 +12,4 @@ __webpack_public_path__ =
     'nbextensions/jupyter_sigplot';
 
 // Export widget models and views, and the npm package version number.
-module.exports = require('./index.js');
+export * from './index.js';
