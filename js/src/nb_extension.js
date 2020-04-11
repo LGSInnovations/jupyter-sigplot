@@ -8,16 +8,16 @@
 
 // Configure requirejs
 if (window.require) {
-  window.require.config({
-    map: {
-      "*": {
-        "jupyter_sigplot": "nbextensions/jupyter_sigplot/index",
-      }
-    }
-  });
+    window.require.config({
+        map: {
+            '*': {
+                jupyter_sigplot: 'nbextensions/jupyter_sigplot/index',
+            },
+        },
+    });
 }
 
 // Export the required load_ipython_extension
 module.exports = {
-  load_ipython_extension: function() {}
+    load_ipython_extension: function () {},
 };
