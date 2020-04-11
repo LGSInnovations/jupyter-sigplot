@@ -1,6 +1,6 @@
 jupyter-sigplot
 ===============================
-|Pip|_ |Prs|_ |Apache2|_ |Travis|_ |Binder|_
+|Pip|_ |Prs|_ |Apache2|_ |Workflow|_ |Binder|_
 
 .. |Pip| image:: https://badge.fury.io/py/jupyter-sigplot.svg
 .. _Pip: https://badge.fury.io/py/jupyter-sigplot
@@ -11,8 +11,8 @@ jupyter-sigplot
 .. |Apache2| image:: https://img.shields.io/badge/license-Apache%202.0-orange.svg
 .. _Apache2: https://opensource.org/licenses/Apache-2.0
 
-.. |Travis| image:: https://travis-ci.org/LGSInnovations/jupyter-sigplot.svg?branch=master
-.. _Travis: https://travis-ci.org/LGSInnovations/jupyter-sigplot
+.. |Workflow| image:: https://github.com/LGSInnovations/jupyter-sigplot/workflows/Test%20Jupyter-Sigplot%20Python/badge.svg
+.. _Workflow: https://github.com/LGSInnovations/jupyter-sigplot/workflows/Test%20Jupyter-Sigplot%20Python/badge.svg
 
 .. |Binder| image:: https://mybinder.org/badge.svg
 .. _Binder: https://mybinder.org/v2/gh/LGSInnovations/jupyter-sigplot/master?filepath=example%2FJupyterSigplot.ipynb
