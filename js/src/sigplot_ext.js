@@ -45,6 +45,12 @@ export class SigPlotModel extends DOMWidgetModel {
         console.log('Handle done...');
     }
 
+    /**
+     * Wrapper around looping over associated views
+     *
+     * @param {function} callback
+     * @private
+     */
     _for_each_view(callback) {
         for (const view_id in this.views) {
             this.views[view_id].then(function (view) {
@@ -73,7 +79,15 @@ export class SigPlotView extends DOMWidgetView {
     }
 
     /**
-     * Handles general `sigplot.Plot` commands
+     * Handles new `sigplot.Plot` commands as a proxy from server Python
+     * to client JS.
+     *
+     * @param {object} prev_cmd_and_args    The previously sent command/args combo
+     * @param {string} prev_cmd_and_args.command    Command from {overlay_*, change_settings}
+     * @param {array} prev_cmd_and_args.arguments   Arguments for respective sigplot.Plot functions
+     * @param new_cmd_and_args {object}     The new command/arg combo
+     * @param {string} new_cmd_and_args.command     Command from {overlay_*, change_settings}
+     * @param {array} new_cmd_and_args.arguments    Arguments for respective sigplot.Plot functions
      */
     handle_command_args_change(prev_cmd_and_args, new_cmd_and_args) {
         const { command: new_command, arguments: new_args } = new_cmd_and_args;
@@ -83,6 +97,8 @@ export class SigPlotView extends DOMWidgetView {
             return;
         }
 
+        // Since we're sending binary for `overlay_array`,
+        // need to convert it to a Float32Array so we can plot it.
         if (new_command === 'overlay_array') {
             new_args[0] = new Float32Array(new_args[0].buffer);
         }
@@ -105,21 +121,23 @@ export class SigPlotView extends DOMWidgetView {
 
     /**
      * Handles remote resource downloading on the server
+     *
+     * @param {number} old_progress     The previous progress update
+     * @param {number} new_progress     The current progress update
      */
-    handle_progress_change() {
-        const old_progress = this.model.previous('progress');
-        const new_progress = this.model.get('progress');
-
+    handle_progress_change(old_progress, new_progress) {
         // Check that this is new progress
-        if (old_progress !== new_progress) {
-            // If it's new progress, make it known
-            // For now, just debug log it to console...
-            console.debug(new_progress);
+        if (old_progress === new_progress) {
+            return;
         }
+
+        // If it's new progress, make it known
+        // For now, just debug log it to console...
+        console.debug(new_progress);
     }
 
     /**
-     * Handles plot closing (ideally)
+     * Handles plot closing
      */
     handle_done() {
         console.log('Done!');
