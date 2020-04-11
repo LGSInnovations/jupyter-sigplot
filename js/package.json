@@ -19,7 +19,7 @@
     "ipywidgets"
   ],
   "scripts": {
-    "build": "webpack",
+    "build": "npm run lint && webpack",
     "clean": "rm -rf dist/",
     "eslint": "eslint . --fix --ignore-path ../.gitignore",
     "eslint:check": "eslint . --ignore-path ../.gitignore",
