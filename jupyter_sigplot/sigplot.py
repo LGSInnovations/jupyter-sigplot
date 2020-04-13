@@ -13,8 +13,9 @@ try:
 except ImportError:
     # Python 2.x
     from urlparse import urlparse as urlsplit
+import uuid
 
-from IPython.display import display
+from IPython.display import display, HTML
 import ipywidgets as widgets
 import numpy as np
 import requests
@@ -39,6 +40,9 @@ class Plot(widgets.DOMWidget):
     """The plot_options dictionary in the JS
     sigplot.Plot(dom_element, plot_options)"""
     plot_options = Dict().tag(sync=True)
+
+    """Unique identifier for each SigPlot instance"""
+    uuid = Unicode().tag(sync=True)
 
     """Progress information for the client"""
     progress = Float().tag(sync=True)
@@ -68,8 +72,14 @@ class Plot(widgets.DOMWidget):
 
         # Whatever's left is meant for sigplot.js's ``sigplot.Plot``
         self.plot_options = kwargs
+        self.uuid = str(uuid.uuid4())
 
+        # Display the interactive widget
         display(self)
+
+        # Dummy container where the rendered Plot png
+        # will go on export as HTML or notebook close
+        display(HTML("<div id=\"%s\"></div>" % self.uuid))
 
     def __getattr__(self, attr):
         """Enables a "thin-wrapper" around sigplot.Plot (JS)
