@@ -1,6 +1,7 @@
 import { DOMWidgetModel, DOMWidgetView } from '@jupyter-widgets/base';
 import { Plot } from 'sigplot';
 import { version } from '../package';
+import { find_output_cell } from './utils';
 
 export class SigPlotModel extends DOMWidgetModel {
     defaults() {
@@ -67,7 +68,9 @@ export class SigPlotModel extends DOMWidgetModel {
 export class SigPlotView extends DOMWidgetView {
     render() {
         // Instantiate a new plot and attach to the element provided in `this.el`
-        this.plot = new Plot(this.el, this.model.get('plot_options'));
+        const plot_options = this.model.get('plot_options');
+        this.plot = new Plot(this.el, plot_options);
+        this.uuid = this.model.get('uuid');
 
         // Wait for element to be added to the DOM
         const self = this;
@@ -91,6 +94,7 @@ export class SigPlotView extends DOMWidgetView {
      */
     handle_command_args_change(prev_cmd_and_args, new_cmd_and_args) {
         const { command: new_command, arguments: new_args } = new_cmd_and_args;
+        console.debug(`new_command=${new_command}`);
 
         // Check that the commands and arguments are different
         if (prev_cmd_and_args === new_cmd_and_args) {
@@ -106,17 +110,33 @@ export class SigPlotView extends DOMWidgetView {
         // Call `new_command` providing `new_args`
         this.plot[new_command].apply(this.plot, new_args);
 
-        // Save a screenshot of the current plot
-        const image_data = this.plot._Mx.active_canvas.toDataURL('image/png');
-        const img = document.createElement('img');
-        img.src = image_data;
+        const self = this;
+        window.setTimeout(function () {
+            // Save a screenshot of the current plot
+            const image_data = self.plot._Mx.active_canvas.toDataURL(
+                'image/png'
+            );
+            if (image_data === 'data:,') {
+                console.debug('Empty `image_data`. Skipping...');
+                return;
+            }
 
-        // Replace existing image with new image
-        const childImg = this.el.querySelector('img');
-        if (childImg) {
-            this.el.removeChild(childImg);
-        }
-        this.el.appendChild(img);
+            // Find the current cell's output area
+            if (window.IPython && !self.cell_info) {
+                console.debug('IPython in namespace, finding output cell...');
+                self.cell_info = find_output_cell(
+                    `<div id="${self.uuid}"></div>`
+                );
+            }
+
+            // Save the screenshot to the output cell
+            if (self.cell_info) {
+                console.debug(self.cell_info);
+                self.cell_info[1][
+                    'text/html'
+                ] = `<img alt="SigPlot plot" src="${image_data}" width="100%">`;
+            }
+        }, 10);
     }
 
     /**
